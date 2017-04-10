@@ -100,6 +100,8 @@ class Client implements LoggerAwareInterface
         }
 
         if (!$this->authenticationStrategy) {
+            $this->logger->critical('Trying to authenticate without strategy.');
+
             throw new DependencyException(sprintf(
                 'Specify authentication strategy before calling this method (%s).',
                 __METHOD__
