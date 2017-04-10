@@ -4,6 +4,7 @@ namespace Vault\Backends;
 
 use Vault\Client;
 use Vault\Exceptions\ClassNotFoundException;
+use Vault\Helpers\ArrayHelper;
 
 /**
  * Class BackendFactory
@@ -34,7 +35,7 @@ class BackendFactory
      */
     public static function getBackend(Client $client, $backend)
     {
-        $class = array_get(static::$map, $backend);
+        $class = ArrayHelper::getValue(static::$map, $backend);
 
         if (!$class) {
             throw new ClassNotFoundException(sprintf('Cannot find class for %s backend', $backend));

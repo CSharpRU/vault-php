@@ -1,11 +1,11 @@
 <?php
 
 
+use Cache\Adapter\Common\CacheItem;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use Codeception\Util\Stub;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\TransferException;
-use GuzzleHttp\Message\Request;
 use GuzzleHttp\Message\RequestInterface;
 use GuzzleHttp\Message\ResponseInterface;
 use GuzzleHttp\Stream\StreamInterface;
@@ -17,6 +17,7 @@ use Vault\Exceptions\ClassNotFoundException;
 use Vault\Exceptions\ClientException;
 use Vault\Exceptions\DependencyException;
 use Vault\Exceptions\ServerException;
+use Vault\Models\Token;
 
 class ClientTest extends \Codeception\Test\Unit
 {
@@ -168,6 +169,38 @@ class ClientTest extends \Codeception\Test\Unit
             $this->assertInstanceOf(ServerException::class, $e);
             $this->assertInstanceOf(ResponseInterface::class, $e->getResponse());
         }
+    }
+
+    public function testTokenCacheInvalidate()
+    {
+        $cache = new ArrayCachePool();
+
+        $client = (new Client())
+            ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
+            ->setCache($cache);
+
+        $this->assertTrue($client->authenticate());
+
+        $realToken = $client->getToken();
+
+        $this->assertNotEmpty($realToken);
+
+        // create new client with cache
+        $client = (new Client())->setCache($cache);
+
+        /** @var CacheItem $token */
+        $tokenCacheItem = $cache->getItem(Client::TOKEN_CACHE_KEY);
+
+        $tokenCacheItem->set(new Token(array_merge($tokenCacheItem->get()->toArray(), ['creationTtl' => 0])));
+
+        $cache->save($tokenCacheItem);
+
+        $this->assertTrue($client->authenticate());
+
+        $newToken = $client->getToken();
+
+        $this->assertNotEmpty($newToken);
+        $this->assertNotEquals($realToken, $newToken);
     }
 
     protected function _before()

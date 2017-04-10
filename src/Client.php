@@ -84,12 +84,18 @@ class Client implements LoggerAwareInterface
     /**
      * @return bool
      *
-     * @throws \Psr\Cache\InvalidArgumentException
      * @throws \Vault\Exceptions\DependencyException
+     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
      */
     public function authenticate()
     {
         if ($this->token = $this->getTokenFromCache()) {
+            $this->logger->debug('Using token from cache.');
+
             return (bool)$this->token;
         }
 
@@ -100,7 +106,11 @@ class Client implements LoggerAwareInterface
             ));
         }
 
+        $this->logger->debug('Trying to authenticate (%s).');
+
         if ($auth = $this->authenticationStrategy->authenticate()) {
+            $this->logger->debug(sprintf('Authentication was successful (%s).', $auth->getClientToken()));
+
             // temporary
             $this->token = new Token(['auth' => $auth]);
 
@@ -109,7 +119,11 @@ class Client implements LoggerAwareInterface
 
             $this->token = new Token(array_merge($response->getData(), ['auth' => $auth]));
 
-            $this->putWhoamiIntoCache();
+            $this->logger->debug(sprintf('My ID is (%s).', $this->token->getId()));
+            $this->logger->debug(sprintf('My creation time is (%s).', $this->token->getCreationTime()));
+            $this->logger->debug(sprintf('My creation TTL is (%s).', $this->token->getCreationTtl()));
+
+            $this->putTokenIntoCache();
 
             return true;
         }
@@ -118,6 +132,8 @@ class Client implements LoggerAwareInterface
     }
 
     /**
+     * @TODO: move to separated class
+     *
      * @return Token|null
      *
      * @throws \Psr\Cache\InvalidArgumentException
@@ -133,6 +149,8 @@ class Client implements LoggerAwareInterface
 
         // invalidate token
         if (!$token || time() > $token->getCreationTime() + $token->getCreationTtl()) {
+            $this->logger->debug(sprintf('Token %s is expired.', $token->getAuth()->getClientToken()));
+
             return null;
         }
 
@@ -228,9 +246,11 @@ class Client implements LoggerAwareInterface
     }
 
     /**
+     * @TODO: move to separated class
+     *
      * @return bool
      */
-    protected function putWhoamiIntoCache()
+    protected function putTokenIntoCache()
     {
         if (!$this->cache) {
             return true; // just ignore
@@ -239,6 +259,8 @@ class Client implements LoggerAwareInterface
         $authItem = (new CacheItem(self::TOKEN_CACHE_KEY))
             ->set($this->token)
             ->expiresAfter($this->token->getAuth()->getLeaseDuration());
+
+        $this->logger->debug('Token is saved into cache.');
 
         return $this->cache->save($authItem);
     }

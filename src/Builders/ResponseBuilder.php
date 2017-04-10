@@ -3,6 +3,7 @@
 namespace Vault\Builders;
 
 use GuzzleHttp\Message\ResponseInterface;
+use Vault\Helpers\ArrayHelper;
 use Vault\Helpers\ModelHelper;
 use Vault\ResponseModels\Auth;
 use Vault\ResponseModels\Response;
@@ -23,7 +24,7 @@ class ResponseBuilder
     {
         $data = ModelHelper::camelize(json_decode((string)$response->getBody(), true) ?: []);
 
-        if ($auth = array_get($data, 'auth')) {
+        if ($auth = ArrayHelper::getValue($data, 'auth')) {
             $data['auth'] = new Auth($auth);
         }
 

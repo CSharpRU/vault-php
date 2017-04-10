@@ -2,6 +2,8 @@
 
 namespace Vault;
 
+use Vault\Helpers\ArrayHelper;
+
 /**
  * Class Object
  *
@@ -223,5 +225,79 @@ class Object
     public function hasMethod($name)
     {
         return method_exists($this, $name);
+    }
+
+    /**
+     * Converts the object into an array.
+     * The default implementation will return all public property values as an array.
+     *
+     * @param array $fields
+     * @param array $expand
+     * @param bool  $recursive
+     *
+     * @return array the array representation of the object
+     */
+    public function toArray(array $fields = [], array $expand = [], $recursive = true)
+    {
+        $data = [];
+
+        foreach ($this->resolveFields($fields, $expand) as $field => $definition) {
+            $data[$field] = is_string($definition) ? $this->$definition : call_user_func($definition, $this, $field);
+        }
+
+        return $recursive ? ArrayHelper::toArray($data) : $data;
+    }
+
+    /**
+     * @param array $fields the fields being requested for exporting
+     * @param array $expand the additional fields being requested for exporting
+     *
+     * @return array
+     */
+    protected function resolveFields(array $fields, array $expand)
+    {
+        $result = [];
+
+        foreach ($this->fields() as $field => $definition) {
+            if (is_int($field)) {
+                $field = $definition;
+            }
+            if (empty($fields) || in_array($field, $fields, true)) {
+                $result[$field] = $definition;
+            }
+        }
+
+        if (empty($expand)) {
+            return $result;
+        }
+
+        foreach ($this->extraFields() as $field => $definition) {
+            if (is_int($field)) {
+                $field = $definition;
+            }
+            if (in_array($field, $expand, true)) {
+                $result[$field] = $definition;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array
+     */
+    public function fields()
+    {
+        $fields = array_keys(get_object_vars($this));
+
+        return array_combine($fields, $fields);
+    }
+
+    /**
+     * @return array
+     */
+    public function extraFields()
+    {
+        return [];
     }
 }
