@@ -5,16 +5,18 @@ use Cache\Adapter\PHPArray\ArrayCachePool;
 use Codeception\Util\Stub;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\TransferException;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
+use GuzzleHttp\Message\Request;
+use GuzzleHttp\Message\RequestInterface;
+use GuzzleHttp\Message\ResponseInterface;
+use GuzzleHttp\Stream\StreamInterface;
 use Psr\Log\NullLogger;
-use Vault\AuthenticationStrategy\UserPassAuthenticationStrategy;
-use Vault\Backend\BackendFactory;
+use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
+use Vault\Backends\BackendFactory;
 use Vault\Client;
-use Vault\Exception\ClassNotFoundException;
-use Vault\Exception\ClientException;
-use Vault\Exception\DependencyException;
-use Vault\Exception\ServerException;
+use Vault\Exceptions\ClassNotFoundException;
+use Vault\Exceptions\ClientException;
+use Vault\Exceptions\DependencyException;
+use Vault\Exceptions\ServerException;
 
 class ClientTest extends \Codeception\Test\Unit
 {
@@ -40,6 +42,8 @@ class ClientTest extends \Codeception\Test\Unit
         $this->assertEquals($client->getAuthenticationStrategy()->getClient(), $client);
         $this->assertTrue($client->authenticate());
         $this->assertNotEmpty($client->getToken());
+        $this->assertNotEmpty($client->getToken()->getAuth()->getLeaseDuration());
+        $this->assertNotEmpty($client->getToken()->getAuth()->isRenewable());
 
         return $client;
     }
@@ -50,7 +54,7 @@ class ClientTest extends \Codeception\Test\Unit
 
         $this->assertTrue($secretBackend->write('test', ['value' => 'test']));
 
-        $data = $secretBackend->read('test');
+        $data = $secretBackend->read('test')->getData();
 
         $this->assertArrayHasKey('value', $data);
         $this->assertEquals('test', $data['value']);
@@ -58,9 +62,9 @@ class ClientTest extends \Codeception\Test\Unit
     }
 
     /**
-     * @return \Vault\Backend\Backend
+     * @return \Vault\Backends\Backend
      */
-    private function getSecretBackend(): \Vault\Backend\Backend
+    private function getSecretBackend()
     {
         return BackendFactory::getBackend($this->getAuthenticatedClient(), BackendFactory::BACKEND_SECRET);
     }
@@ -119,6 +123,9 @@ class ClientTest extends \Codeception\Test\Unit
         $this->expectException(ServerException::class);
 
         $transport = Stub::makeEmpty(ClientInterface::class, [
+            'createRequest' => function () {
+                return Stub::makeEmpty(RequestInterface::class, []);
+            },
             'send' => function () {
                 throw new TransferException();
             },
@@ -131,6 +138,9 @@ class ClientTest extends \Codeception\Test\Unit
     {
         try {
             $transport = Stub::makeEmpty(ClientInterface::class, [
+                'createRequest' => function () {
+                    return Stub::makeEmpty(RequestInterface::class, []);
+                },
                 'send' => function () {
                     return Stub::makeEmpty(ResponseInterface::class, [
                         'getStatusCode' => function () {

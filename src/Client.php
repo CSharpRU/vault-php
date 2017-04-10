@@ -5,18 +5,20 @@ namespace Vault;
 use Cache\Adapter\Common\CacheItem;
 use GuzzleHttp\ClientInterface as Transport;
 use GuzzleHttp\Exception\TransferException;
-use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Message\RequestInterface;
+use GuzzleHttp\Message\ResponseInterface;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Vault\AuthenticationStrategy\AuthenticationStrategy;
-use Vault\Exception\ClientException;
-use Vault\Exception\DependencyException;
-use Vault\Exception\ServerException;
+use Vault\AuthenticationStrategies\AuthenticationStrategy;
+use Vault\Builders\ResponseBuilder;
+use Vault\Exceptions\ClientException;
+use Vault\Exceptions\DependencyException;
+use Vault\Exceptions\ServerException;
+use Vault\Models\Token;
+use Vault\ResponseModels\Response;
 
 /**
  * Class Client
@@ -25,10 +27,12 @@ use Vault\Exception\ServerException;
  */
 class Client implements LoggerAwareInterface
 {
+    const TOKEN_CACHE_KEY = 'token';
+
     use LoggerAwareTrait;
 
     /**
-     * @var string
+     * @var Token
      */
     protected $token;
 
@@ -43,14 +47,14 @@ class Client implements LoggerAwareInterface
     protected $cache;
 
     /**
-     * @var int
-     */
-    protected $cacheTtl = 3600;
-
-    /**
      * @var AuthenticationStrategy
      */
     protected $authenticationStrategy;
+
+    /**
+     * @var ResponseBuilder
+     */
+    protected $responseBuilder;
 
     /**
      * Client constructor.
@@ -62,33 +66,30 @@ class Client implements LoggerAwareInterface
     public function __construct(array $options = [], LoggerInterface $logger = null, Transport $transport = null)
     {
         $options = array_merge([
-            'base_uri' => 'http://127.0.0.1:8200',
-            'http_errors' => false,
-            'headers' => [
-                'User-Agent' => 'VaultPHP/1.0.0',
-                'Content-Type' => 'application/json',
+            'base_url' => 'http://127.0.0.1:8200',
+            'defaults' => [
+                'exceptions' => false,
+                'headers' => [
+                    'User-Agent' => 'VaultPHP/1.0.0',
+                    'Content-Type' => 'application/json',
+                ],
             ],
         ], $options);
 
         $this->transport = $transport ?: new \GuzzleHttp\Client($options);
         $this->logger = $logger ?: new NullLogger();
+        $this->responseBuilder = new ResponseBuilder();
     }
 
     /**
      * @return bool
      *
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Vault\Exception\DependencyException
+     * @throws \Vault\Exceptions\DependencyException
      */
     public function authenticate()
     {
-        if (
-            $this->cache &&
-            $this->cache->hasItem('token') &&
-            $token = $this->cache->getItem('token')->get()
-        ) {
-            $this->token = $token;
-
+        if ($this->token = $this->getTokenFromCache()) {
             return (bool)$this->token;
         }
 
@@ -99,59 +100,84 @@ class Client implements LoggerAwareInterface
             ));
         }
 
-        $this->token = $this->authenticationStrategy->authenticate();
+        if ($auth = $this->authenticationStrategy->authenticate()) {
+            // temporary
+            $this->token = new Token(['auth' => $auth]);
 
-        if ($this->cache) {
-            $tokenItem = (new CacheItem('token'))->set($this->token)->expiresAfter($this->cacheTtl ?: 3600);
+            // get info about self
+            $response = $this->get('/v1/auth/token/lookup-self');
 
-            $this->cache->save($tokenItem);
+            $this->token = new Token(array_merge($response->getData(), ['auth' => $auth]));
+
+            $this->putWhoamiIntoCache();
+
+            return true;
         }
 
-        return (bool)$this->token;
+        return false;
+    }
+
+    /**
+     * @return Token|null
+     *
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    protected function getTokenFromCache()
+    {
+        if (!$this->cache || !$this->cache->hasItem(self::TOKEN_CACHE_KEY)) {
+            return null;
+        }
+
+        /** @var Token $token */
+        $token = $this->cache->getItem(self::TOKEN_CACHE_KEY)->get();
+
+        // invalidate token
+        if (!$token || time() > $token->getCreationTime() + $token->getCreationTtl()) {
+            return null;
+        }
+
+        return $token;
     }
 
     /**
      * @param string $url
      * @param array  $options
      *
-     * @return array
-     * @throws \Vault\Exception\ServerException
-     * @throws \Vault\Exception\ClientException
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
     public function get($url = null, array $options = [])
     {
-        return $this->send(new Request('GET', $url), $options);
+        return $this->responseBuilder->build($this->send($this->transport->createRequest('GET', $url, $options)));
     }
 
     /**
      * @param RequestInterface $request
-     * @param array            $options
      *
-     * @return array
+     * @return ResponseInterface
      *
      * @throws \RuntimeException
-     * @throws \InvalidArgumentException
-     * @throws \Vault\Exception\ClientException
-     * @throws \Vault\Exception\ServerException
      */
-    public function send(RequestInterface $request, array $options = [])
+    public function send(RequestInterface $request)
     {
         if ($this->token) {
-            $request = $request->withHeader('X-Vault-Token', $this->token);
+            $request->addHeader('X-Vault-Token', $this->token->getAuth()->getClientToken());
         }
 
-        $this->logger->info(sprintf('%s "%s"', $request->getMethod(), $request->getUri()));
+        $this->logger->info(sprintf('%s "%s"', $request->getMethod(), $request->getUrl()));
         $this->logger->debug(sprintf(
             "Request: \n%s\n%s\n%s",
-            $request->getUri(),
+            $request->getUrl(),
             $request->getMethod(),
             json_encode($request->getHeaders())
         ));
 
         try {
-            $response = $this->transport->send($request, $options);
+            $response = $this->transport->send($request);
         } catch (TransferException $e) {
             $message = sprintf('Something went wrong when calling Vault (%s).', $e->getMessage());
 
@@ -164,11 +190,15 @@ class Client implements LoggerAwareInterface
 
         $this->checkResponse($response);
 
-        return json_decode((string)$response->getBody(), true);
+        return $response;
     }
 
     /**
      * @param ResponseInterface $response
+     *
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \RuntimeException
      */
     protected function checkResponse(ResponseInterface $response)
     {
@@ -198,97 +228,119 @@ class Client implements LoggerAwareInterface
     }
 
     /**
+     * @return bool
+     */
+    protected function putWhoamiIntoCache()
+    {
+        if (!$this->cache) {
+            return true; // just ignore
+        }
+
+        $authItem = (new CacheItem(self::TOKEN_CACHE_KEY))
+            ->set($this->token)
+            ->expiresAfter($this->token->getAuth()->getLeaseDuration());
+
+        return $this->cache->save($authItem);
+    }
+
+    /**
      * @param string $url
      * @param array  $options
      *
-     * @return array
-     * @throws \Vault\Exception\ServerException
-     * @throws \Vault\Exception\ClientException
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
     public function head($url, array $options = [])
     {
-        return $this->send(new Request('HEAD', $url), $options);
+        return $this->responseBuilder->build($this->send($this->transport->createRequest('HEAD', $url, $options)));
     }
 
     /**
      * @param string $url
      * @param array  $options
      *
-     * @return array
-     * @throws \Vault\Exception\ServerException
-     * @throws \Vault\Exception\ClientException
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
     public function delete($url, array $options = [])
     {
-        return $this->send(new Request('DELETE', $url), $options);
+        return $this->responseBuilder->build($this->send($this->transport->createRequest('DELETE', $url, $options)));
     }
 
     /**
      * @param string $url
      * @param array  $options
      *
-     * @return array
-     * @throws \Vault\Exception\ServerException
-     * @throws \Vault\Exception\ClientException
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
     public function put($url, array $options = [])
     {
-        return $this->send(new Request('PUT', $url), $options);
+        return $this->responseBuilder->build($this->send($this->transport->createRequest('PUT', $url, $options)));
     }
 
     /**
      * @param string $url
      * @param array  $options
      *
-     * @return array
-     * @throws \Vault\Exception\ServerException
-     * @throws \Vault\Exception\ClientException
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
     public function patch($url, array $options = [])
     {
-        return $this->send(new Request('PATCH', $url), $options);
+        return $this->responseBuilder->build($this->send($this->transport->createRequest('PATCH', $url, $options)));
     }
 
     /**
      * @param string $url
      * @param array  $options
      *
-     * @return array
-     * @throws \Vault\Exception\ServerException
-     * @throws \Vault\Exception\ClientException
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
     public function post($url, array $options = [])
     {
-        return $this->send(new Request('POST', $url), $options);
+        return $this->responseBuilder->build($this->send($this->transport->createRequest('POST', $url, $options)));
     }
 
     /**
      * @param string $url
      * @param array  $options
      *
-     * @return array
-     * @throws \Vault\Exception\ServerException
-     * @throws \Vault\Exception\ClientException
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
     public function options($url, array $options = [])
     {
-        return $this->send(new Request('OPTIONS', $url), $options);
+        return $this->responseBuilder->build($this->send($this->transport->createRequest('OPTIONS', $url, $options)));
     }
 
     /**
-     * @return string
+     * @return Token
      */
     public function getToken()
     {
@@ -296,11 +348,11 @@ class Client implements LoggerAwareInterface
     }
 
     /**
-     * @param string $token
+     * @param Token $token
      *
      * @return $this
      */
-    public function setToken($token)
+    public function setToken(Token $token)
     {
         $this->token = $token;
 
@@ -362,26 +414,6 @@ class Client implements LoggerAwareInterface
     }
 
     /**
-     * @return int
-     */
-    public function getCacheTtl()
-    {
-        return $this->cacheTtl;
-    }
-
-    /**
-     * @param int $cacheTtl
-     *
-     * @return $this
-     */
-    public function setCacheTtl($cacheTtl)
-    {
-        $this->cacheTtl = $cacheTtl;
-
-        return $this;
-    }
-
-    /**
      * @return AuthenticationStrategy
      */
     public function getAuthenticationStrategy()
@@ -399,6 +431,26 @@ class Client implements LoggerAwareInterface
         $authenticationStrategy->setClient($this);
 
         $this->authenticationStrategy = $authenticationStrategy;
+
+        return $this;
+    }
+
+    /**
+     * @return ResponseBuilder
+     */
+    public function getResponseBuilder()
+    {
+        return $this->responseBuilder;
+    }
+
+    /**
+     * @param ResponseBuilder $responseBuilder
+     *
+     * @return $this
+     */
+    public function setResponseBuilder(ResponseBuilder $responseBuilder)
+    {
+        $this->responseBuilder = $responseBuilder;
 
         return $this;
     }

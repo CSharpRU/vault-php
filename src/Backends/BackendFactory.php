@@ -1,9 +1,9 @@
 <?php
 
-namespace Vault\Backend;
+namespace Vault\Backends;
 
 use Vault\Client;
-use Vault\Exception\ClassNotFoundException;
+use Vault\Exceptions\ClassNotFoundException;
 
 /**
  * Class BackendFactory
@@ -13,9 +13,16 @@ use Vault\Exception\ClassNotFoundException;
 class BackendFactory
 {
     const BACKEND_SECRET = 'secret';
+    const BACKEND_MYSQL = 'mysql';
+    const BACKEND_POSTGRESQL = 'postgresql';
 
+    /**
+     * @var array
+     */
     protected static $map = [
         self::BACKEND_SECRET => SecretBackend::class,
+        self::BACKEND_MYSQL => MySqlBackend::class,
+        self::BACKEND_POSTGRESQL => PostgreSqlBackend::class,
     ];
 
     /**
@@ -23,7 +30,7 @@ class BackendFactory
      * @param string $backend
      *
      * @return Backend
-     * @throws \Vault\Exception\ClassNotFoundException
+     * @throws \Vault\Exceptions\ClassNotFoundException
      */
     public static function getBackend(Client $client, $backend)
     {

@@ -13,7 +13,7 @@
         "psr-4": {"Vault\\": "src/"}
     },
     "require": {
-        "guzzlehttp/guzzle": "~6.2",
+        "guzzlehttp/guzzle": "~5.3",
         "psr/cache": "^1.0",
         "psr/log": "^1.0",
         "cache/cache": "^0.4.0",
