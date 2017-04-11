@@ -14,7 +14,7 @@ class MySqlBackend extends AbstractBackend
      *
      * @return string
      */
-    private function buildPath($path)
+    protected function buildPath($path)
     {
         return sprintf('/v1/mysql/%s', $path);
     }
