@@ -1,6 +1,6 @@
 <?php
 
-namespace Vault\Exception;
+namespace Vault\Exceptions;
 
 /**
  * Class ClientException

@@ -1,20 +1,23 @@
 <?php
 
-
+use Cache\Adapter\Common\CacheItem;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use Codeception\Util\Stub;
-use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\TransferException;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\NullLogger;
-use Vault\AuthenticationStrategy\UserPassAuthenticationStrategy;
-use Vault\Backend\BackendFactory;
+use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
+use Vault\Backends\BackendFactory;
 use Vault\Client;
-use Vault\Exception\ClassNotFoundException;
-use Vault\Exception\ClientException;
-use Vault\Exception\DependencyException;
-use Vault\Exception\ServerException;
+use Vault\Exceptions\ClassNotFoundException;
+use Vault\Exceptions\ClientException;
+use Vault\Exceptions\DependencyException;
+use Vault\Exceptions\ServerException;
+use Vault\Models\Token;
+use Vault\Transports\Transport;
+use VaultTransports\Guzzle6Transport;
 
 class ClientTest extends \Codeception\Test\Unit
 {
@@ -33,13 +36,15 @@ class ClientTest extends \Codeception\Test\Unit
      */
     private function getAuthenticatedClient()
     {
-        $client = (new Client())
+        $client = (new Client(new Guzzle6Transport()))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setLogger(new NullLogger());
 
         $this->assertEquals($client->getAuthenticationStrategy()->getClient(), $client);
         $this->assertTrue($client->authenticate());
         $this->assertNotEmpty($client->getToken());
+        $this->assertNotEmpty($client->getToken()->getAuth()->getLeaseDuration());
+        $this->assertNotEmpty($client->getToken()->getAuth()->isRenewable());
 
         return $client;
     }
@@ -50,7 +55,7 @@ class ClientTest extends \Codeception\Test\Unit
 
         $this->assertTrue($secretBackend->write('test', ['value' => 'test']));
 
-        $data = $secretBackend->read('test');
+        $data = $secretBackend->read('test')->getData();
 
         $this->assertArrayHasKey('value', $data);
         $this->assertEquals('test', $data['value']);
@@ -58,9 +63,9 @@ class ClientTest extends \Codeception\Test\Unit
     }
 
     /**
-     * @return \Vault\Backend\Backend
+     * @return \Vault\Backends\Backend
      */
-    private function getSecretBackend(): \Vault\Backend\Backend
+    private function getSecretBackend()
     {
         return BackendFactory::getBackend($this->getAuthenticatedClient(), BackendFactory::BACKEND_SECRET);
     }
@@ -86,7 +91,7 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $cache = new ArrayCachePool();
 
-        $client = (new Client())
+        $client = (new Client(new Guzzle6Transport()))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setCache($cache);
 
@@ -97,7 +102,7 @@ class ClientTest extends \Codeception\Test\Unit
         $this->assertNotEmpty($realToken);
 
         // create new client with cache
-        $client = (new Client())->setCache($cache);
+        $client = (new Client(new Guzzle6Transport()))->setCache($cache);
 
         $this->assertTrue($client->authenticate());
 
@@ -111,26 +116,32 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $this->expectException(DependencyException::class);
 
-        (new Client())->authenticate();
+        (new Client(new Guzzle6Transport()))->authenticate();
     }
 
     public function testTransportProblems()
     {
         $this->expectException(ServerException::class);
 
-        $transport = Stub::makeEmpty(ClientInterface::class, [
+        $transport = Stub::makeEmpty(Transport::class, [
+            'createRequest' => function () {
+                return Stub::makeEmpty(RequestInterface::class, []);
+            },
             'send' => function () {
                 throw new TransferException();
             },
         ]);
 
-        (new Client([], null, $transport))->get('');
+        (new Client($transport))->get('');
     }
 
     public function testServerProblems()
     {
         try {
-            $transport = Stub::makeEmpty(ClientInterface::class, [
+            $transport = Stub::makeEmpty(Transport::class, [
+                'createRequest' => function () {
+                    return Stub::makeEmpty(RequestInterface::class, []);
+                },
                 'send' => function () {
                     return Stub::makeEmpty(ResponseInterface::class, [
                         'getStatusCode' => function () {
@@ -153,11 +164,43 @@ class ClientTest extends \Codeception\Test\Unit
                 },
             ]);
 
-            (new Client([], null, $transport))->get('');
+            (new Client($transport))->get('');
         } catch (Exception $e) {
             $this->assertInstanceOf(ServerException::class, $e);
             $this->assertInstanceOf(ResponseInterface::class, $e->getResponse());
         }
+    }
+
+    public function testTokenCacheInvalidate()
+    {
+        $cache = new ArrayCachePool();
+
+        $client = (new Client(new Guzzle6Transport()))
+            ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
+            ->setCache($cache);
+
+        $this->assertTrue($client->authenticate());
+
+        $realToken = $client->getToken();
+
+        $this->assertNotEmpty($realToken);
+
+        // create new client with cache
+        $client = (new Client(new Guzzle6Transport()))->setCache($cache);
+
+        /** @var CacheItem $token */
+        $tokenCacheItem = $cache->getItem(Client::TOKEN_CACHE_KEY);
+
+        $tokenCacheItem->set(new Token(array_merge($tokenCacheItem->get()->toArray(), ['creationTtl' => 0])));
+
+        $cache->save($tokenCacheItem);
+
+        $this->assertTrue($client->authenticate());
+
+        $newToken = $client->getToken();
+
+        $this->assertNotEmpty($newToken);
+        $this->assertNotEquals($realToken, $newToken);
     }
 
     protected function _before()

@@ -1,30 +1,20 @@
 <?php
 
-namespace Vault\Backend;
+namespace Vault\AuthenticationStrategies;
 
 use Vault\Client;
 
 /**
- * Class AbstractBackend
+ * Class AbstractAuthenticationStrategy
  *
- * @package Vault\Backend
+ * @package Vault\AuthenticationStrategy
  */
-abstract class AbstractBackend implements Backend
+abstract class AbstractAuthenticationStrategy implements AuthenticationStrategy
 {
     /**
      * @var Client
      */
     protected $client;
-
-    /**
-     * AbstractBackend constructor.
-     *
-     * @param Client $client
-     */
-    public function __construct(Client $client)
-    {
-        $this->client = $client;
-    }
 
     /**
      * @return Client
@@ -39,7 +29,7 @@ abstract class AbstractBackend implements Backend
      *
      * @return $this
      */
-    public function setClient($client)
+    public function setClient(Client $client)
     {
         $this->client = $client;
 

@@ -1,6 +1,9 @@
 <?php
 
-namespace Vault\Backend;
+namespace Vault\Backends;
+
+use Vault\Client;
+use Vault\ResponseModels\Response;
 
 /**
  * Interface Backend
@@ -12,7 +15,7 @@ interface Backend
     /**
      * @param string $path
      *
-     * @return array
+     * @return Response
      */
     public function read($path);
 
@@ -30,4 +33,16 @@ interface Backend
      * @return bool
      */
     public function revoke($path);
+
+    /**
+     * @return Client
+     */
+    public function getClient();
+
+    /**
+     * @param Client $client
+     *
+     * @return $this
+     */
+    public function setClient($client);
 }

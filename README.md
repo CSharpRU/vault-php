@@ -15,6 +15,13 @@ Please check out this list:
 
 Check `examples` and `tests` directories for code.
 
+### Transports ###
+
+Check these repos for different transport implementations:
+
+* https://github.com/CSharpRU/vault-php-guzzle6-transport
+* https://github.com/CSharpRU/vault-php-guzzle5-transport
+
 ### Contribution guidelines ###
 
 * If you want to write tests, run `composer update` at the root of repository.

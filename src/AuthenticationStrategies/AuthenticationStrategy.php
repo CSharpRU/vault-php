@@ -1,8 +1,9 @@
 <?php
 
-namespace Vault\AuthenticationStrategy;
+namespace Vault\AuthenticationStrategies;
 
 use Vault\Client;
+use Vault\ResponseModels\Auth;
 
 /**
  * Interface AuthenticationStrategy
@@ -12,9 +13,9 @@ use Vault\Client;
 interface AuthenticationStrategy
 {
     /**
-     * Returns token for further interactions with Vault.
+     * Returns auth for further interactions with Vault.
      *
-     * @return string
+     * @return Auth
      */
     public function authenticate();
 
