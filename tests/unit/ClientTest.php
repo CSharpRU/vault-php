@@ -1,14 +1,12 @@
 <?php
 
-
 use Cache\Adapter\Common\CacheItem;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use Codeception\Util\Stub;
-use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\TransferException;
-use GuzzleHttp\Message\RequestInterface;
-use GuzzleHttp\Message\ResponseInterface;
-use GuzzleHttp\Stream\StreamInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Log\NullLogger;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
 use Vault\Backends\BackendFactory;
@@ -18,6 +16,8 @@ use Vault\Exceptions\ClientException;
 use Vault\Exceptions\DependencyException;
 use Vault\Exceptions\ServerException;
 use Vault\Models\Token;
+use Vault\Transports\Transport;
+use VaultTransports\Guzzle6Transport;
 
 class ClientTest extends \Codeception\Test\Unit
 {
@@ -36,7 +36,7 @@ class ClientTest extends \Codeception\Test\Unit
      */
     private function getAuthenticatedClient()
     {
-        $client = (new Client())
+        $client = (new Client(new Guzzle6Transport()))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setLogger(new NullLogger());
 
@@ -91,7 +91,7 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $cache = new ArrayCachePool();
 
-        $client = (new Client())
+        $client = (new Client(new Guzzle6Transport()))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setCache($cache);
 
@@ -102,7 +102,7 @@ class ClientTest extends \Codeception\Test\Unit
         $this->assertNotEmpty($realToken);
 
         // create new client with cache
-        $client = (new Client())->setCache($cache);
+        $client = (new Client(new Guzzle6Transport()))->setCache($cache);
 
         $this->assertTrue($client->authenticate());
 
@@ -116,14 +116,14 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $this->expectException(DependencyException::class);
 
-        (new Client())->authenticate();
+        (new Client(new Guzzle6Transport()))->authenticate();
     }
 
     public function testTransportProblems()
     {
         $this->expectException(ServerException::class);
 
-        $transport = Stub::makeEmpty(ClientInterface::class, [
+        $transport = Stub::makeEmpty(Transport::class, [
             'createRequest' => function () {
                 return Stub::makeEmpty(RequestInterface::class, []);
             },
@@ -132,13 +132,13 @@ class ClientTest extends \Codeception\Test\Unit
             },
         ]);
 
-        (new Client([], null, $transport))->get('');
+        (new Client($transport))->get('');
     }
 
     public function testServerProblems()
     {
         try {
-            $transport = Stub::makeEmpty(ClientInterface::class, [
+            $transport = Stub::makeEmpty(Transport::class, [
                 'createRequest' => function () {
                     return Stub::makeEmpty(RequestInterface::class, []);
                 },
@@ -164,7 +164,7 @@ class ClientTest extends \Codeception\Test\Unit
                 },
             ]);
 
-            (new Client([], null, $transport))->get('');
+            (new Client($transport))->get('');
         } catch (Exception $e) {
             $this->assertInstanceOf(ServerException::class, $e);
             $this->assertInstanceOf(ResponseInterface::class, $e->getResponse());
@@ -175,7 +175,7 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $cache = new ArrayCachePool();
 
-        $client = (new Client())
+        $client = (new Client(new Guzzle6Transport()))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setCache($cache);
 
@@ -186,7 +186,7 @@ class ClientTest extends \Codeception\Test\Unit
         $this->assertNotEmpty($realToken);
 
         // create new client with cache
-        $client = (new Client())->setCache($cache);
+        $client = (new Client(new Guzzle6Transport()))->setCache($cache);
 
         /** @var CacheItem $token */
         $tokenCacheItem = $cache->getItem(Client::TOKEN_CACHE_KEY);

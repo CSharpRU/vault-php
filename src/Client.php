@@ -3,11 +3,11 @@
 namespace Vault;
 
 use Cache\Adapter\Common\CacheItem;
-use GuzzleHttp\ClientInterface as Transport;
 use GuzzleHttp\Exception\TransferException;
-use GuzzleHttp\Message\RequestInterface;
-use GuzzleHttp\Message\ResponseInterface;
+use GuzzleHttp\Psr7\Request;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
@@ -19,6 +19,7 @@ use Vault\Exceptions\DependencyException;
 use Vault\Exceptions\ServerException;
 use Vault\Models\Token;
 use Vault\ResponseModels\Response;
+use Vault\Transports\Transport;
 
 /**
  * Class Client
@@ -59,24 +60,12 @@ class Client implements LoggerAwareInterface
     /**
      * Client constructor.
      *
-     * @param array           $options
-     * @param LoggerInterface $logger
      * @param Transport       $transport
+     * @param LoggerInterface $logger
      */
-    public function __construct(array $options = [], LoggerInterface $logger = null, Transport $transport = null)
+    public function __construct(Transport $transport, LoggerInterface $logger = null)
     {
-        $options = array_merge([
-            'base_url' => 'http://127.0.0.1:8200',
-            'defaults' => [
-                'exceptions' => false,
-                'headers' => [
-                    'User-Agent' => 'VaultPHP/1.0.0',
-                    'Content-Type' => 'application/json',
-                ],
-            ],
-        ], $options);
-
-        $this->transport = $transport ?: new \GuzzleHttp\Client($options);
+        $this->transport = $transport;
         $this->logger = $logger ?: new NullLogger();
         $this->responseBuilder = new ResponseBuilder();
     }
@@ -84,6 +73,7 @@ class Client implements LoggerAwareInterface
     /**
      * @return bool
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\DependencyException
      * @throws \Psr\Cache\InvalidArgumentException
      * @throws \Vault\Exceptions\ServerException
@@ -165,6 +155,7 @@ class Client implements LoggerAwareInterface
      *
      * @return Response
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
      * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
@@ -172,32 +163,40 @@ class Client implements LoggerAwareInterface
      */
     public function get($url = null, array $options = [])
     {
-        return $this->responseBuilder->build($this->send($this->transport->createRequest('GET', $url, $options)));
+        return $this->responseBuilder->build($this->send(new Request('GET', $url), $options));
     }
 
     /**
      * @param RequestInterface $request
+     * @param array            $options
      *
      * @return ResponseInterface
      *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \Vault\Exceptions\ServerException
      * @throws \RuntimeException
+     * @throws \InvalidArgumentException
      */
-    public function send(RequestInterface $request)
+    public function send(RequestInterface $request, array $options = [])
     {
+        $request = $request->withHeader('User-Agent', 'VaultPHP/1.0.0');
+        $request = $request->withHeader('Content-Type', 'application/json');
+
         if ($this->token) {
-            $request->addHeader('X-Vault-Token', $this->token->getAuth()->getClientToken());
+            $request = $request->withHeader('X-Vault-Token', $this->token->getAuth()->getClientToken());
         }
 
-        $this->logger->info(sprintf('%s "%s"', $request->getMethod(), $request->getUrl()));
+        $this->logger->info(sprintf('%s "%s"', $request->getMethod(), $request->getUri()));
         $this->logger->debug(sprintf(
             "Request: \n%s\n%s\n%s",
-            $request->getUrl(),
+            $request->getUri(),
             $request->getMethod(),
             json_encode($request->getHeaders())
         ));
 
         try {
-            $response = $this->transport->send($request);
+            $response = $this->transport->send($request, $options);
         } catch (TransferException $e) {
             $message = sprintf('Something went wrong when calling Vault (%s).', $e->getMessage());
 
@@ -273,6 +272,7 @@ class Client implements LoggerAwareInterface
      *
      * @return Response
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
      * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
@@ -280,7 +280,7 @@ class Client implements LoggerAwareInterface
      */
     public function head($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send($this->transport->createRequest('HEAD', $url, $options)));
+        return $this->responseBuilder->build($this->send(new Request('HEAD', $url), $options));
     }
 
     /**
@@ -289,6 +289,7 @@ class Client implements LoggerAwareInterface
      *
      * @return Response
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
      * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
@@ -296,7 +297,7 @@ class Client implements LoggerAwareInterface
      */
     public function delete($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send($this->transport->createRequest('DELETE', $url, $options)));
+        return $this->responseBuilder->build($this->send(new Request('DELETE', $url), $options));
     }
 
     /**
@@ -305,6 +306,7 @@ class Client implements LoggerAwareInterface
      *
      * @return Response
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
      * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
@@ -312,7 +314,7 @@ class Client implements LoggerAwareInterface
      */
     public function put($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send($this->transport->createRequest('PUT', $url, $options)));
+        return $this->responseBuilder->build($this->send(new Request('PUT', $url), $options));
     }
 
     /**
@@ -321,6 +323,7 @@ class Client implements LoggerAwareInterface
      *
      * @return Response
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
      * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
@@ -328,7 +331,7 @@ class Client implements LoggerAwareInterface
      */
     public function patch($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send($this->transport->createRequest('PATCH', $url, $options)));
+        return $this->responseBuilder->build($this->send(new Request('PATCH', $url), $options));
     }
 
     /**
@@ -337,6 +340,7 @@ class Client implements LoggerAwareInterface
      *
      * @return Response
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
      * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
@@ -344,7 +348,7 @@ class Client implements LoggerAwareInterface
      */
     public function post($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send($this->transport->createRequest('POST', $url, $options)));
+        return $this->responseBuilder->build($this->send(new Request('POST', $url), $options));
     }
 
     /**
@@ -353,6 +357,7 @@ class Client implements LoggerAwareInterface
      *
      * @return Response
      *
+     * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
      * @throws \Vault\Exceptions\ClientException
      * @throws \RuntimeException
@@ -360,7 +365,7 @@ class Client implements LoggerAwareInterface
      */
     public function options($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send($this->transport->createRequest('OPTIONS', $url, $options)));
+        return $this->responseBuilder->build($this->send(new Request('OPTIONS', $url), $options));
     }
 
     /**

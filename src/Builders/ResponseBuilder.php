@@ -2,7 +2,7 @@
 
 namespace Vault\Builders;
 
-use GuzzleHttp\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface;
 use Vault\Helpers\ArrayHelper;
 use Vault\Helpers\ModelHelper;
 use Vault\ResponseModels\Auth;
