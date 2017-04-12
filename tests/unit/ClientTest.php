@@ -11,7 +11,6 @@ use Psr\Log\NullLogger;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
 use Vault\Backends\BackendFactory;
 use Vault\Client;
-use Vault\Exceptions\ClassNotFoundException;
 use Vault\Exceptions\ClientException;
 use Vault\Exceptions\DependencyException;
 use Vault\Exceptions\ServerException;
@@ -51,23 +50,15 @@ class ClientTest extends \Codeception\Test\Unit
 
     public function testWriteReadRevokeSecret()
     {
-        $secretBackend = $this->getSecretBackend();
+        $client = $this->getAuthenticatedClient();
 
-        $this->assertTrue($secretBackend->write('test', ['value' => 'test']));
+        $this->assertNotEmpty($client->write('/secret/test', ['value' => 'test']));
 
-        $data = $secretBackend->read('test')->getData();
+        $data = $client->read('/secret/test')->getData();
 
         $this->assertArrayHasKey('value', $data);
         $this->assertEquals('test', $data['value']);
-        $this->assertTrue($secretBackend->revoke('test'));
-    }
-
-    /**
-     * @return \Vault\Backends\Backend
-     */
-    private function getSecretBackend()
-    {
-        return BackendFactory::getBackend($this->getAuthenticatedClient(), BackendFactory::BACKEND_SECRET);
+        $this->assertNotEmpty($client->revoke('/secret/test'));
     }
 
     public function testWritePermissionDeniedSecret()
@@ -75,16 +66,9 @@ class ClientTest extends \Codeception\Test\Unit
         $this->expectException(ClientException::class);
         $this->expectExceptionCode(403);
 
-        $secretBackend = $this->getSecretBackend();
+        $client = $this->getAuthenticatedClient();
 
-        $secretBackend->write('test_prohibited', ['value' => 'test']);
-    }
-
-    public function testUnknownBackend()
-    {
-        $this->expectException(ClassNotFoundException::class);
-
-        BackendFactory::getBackend($this->getAuthenticatedClient(), 'unknown');
+        $client->write('/secret/test_prohibited', ['value' => 'test']);
     }
 
     public function testTokenCache()
