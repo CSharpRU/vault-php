@@ -2,6 +2,8 @@
 
 namespace Vault\Helpers;
 
+use Doctrine\Common\Inflector\Inflector;
+
 /**
  * Class Model
  *
@@ -24,7 +26,7 @@ class ModelHelper
                 $value = self::camelize($value, $recursive);
             }
 
-            $return[lcfirst(InflectorHelper::camelize($key))] = $value;
+            $return[Inflector::camelize($key)] = $value;
         }
 
         return $return;
