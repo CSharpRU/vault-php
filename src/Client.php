@@ -28,9 +28,16 @@ use Vault\Transports\Transport;
  */
 class Client implements LoggerAwareInterface
 {
+    const VERSION_1 = 'v1';
+
     const TOKEN_CACHE_KEY = 'token';
 
     use LoggerAwareTrait;
+
+    /**
+     * @var string
+     */
+    protected $version = self::VERSION_1;
 
     /**
      * @var Token
@@ -295,23 +302,6 @@ class Client implements LoggerAwareInterface
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
-    public function delete($url, array $options = [])
-    {
-        return $this->responseBuilder->build($this->send(new Request('DELETE', $url), $options));
-    }
-
-    /**
-     * @param string $url
-     * @param array  $options
-     *
-     * @return Response
-     *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
-     */
     public function put($url, array $options = [])
     {
         return $this->responseBuilder->build($this->send(new Request('PUT', $url), $options));
@@ -346,9 +336,58 @@ class Client implements LoggerAwareInterface
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
-    public function post($url, array $options = [])
+    public function options($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send(new Request('POST', $url), $options));
+        return $this->responseBuilder->build($this->send(new Request('OPTIONS', $url), $options));
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function read($path)
+    {
+        return $this->get($this->buildPath($path));
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return string
+     */
+    protected function buildPath($path)
+    {
+        if (!$this->version) {
+            $this->logger->warning('API version is not set!');
+
+            return $path;
+        }
+
+        return sprintf('%s%s', $this->version, $path);
+    }
+
+    /**
+     * @param string $path
+     * @param array  $data
+     *
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function write($path, array $data = [])
+    {
+        return $this->post($this->buildPath($path), ['body' => json_encode($data)]);
     }
 
     /**
@@ -363,9 +402,62 @@ class Client implements LoggerAwareInterface
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      */
-    public function options($url, array $options = [])
+    public function post($url, array $options = [])
     {
-        return $this->responseBuilder->build($this->send(new Request('OPTIONS', $url), $options));
+        return $this->responseBuilder->build($this->send(new Request('POST', $url), $options));
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function revoke($path)
+    {
+        return $this->delete($this->buildPath($path));
+    }
+
+    /**
+     * @param string $url
+     * @param array  $options
+     *
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function delete($url, array $options = [])
+    {
+        return $this->responseBuilder->build($this->send(new Request('DELETE', $url), $options));
+    }
+
+    /**
+     * @return string
+     */
+    public function getVersion()
+    {
+        return $this->version;
+    }
+
+    /**
+     * @param string $version
+     *
+     * @return $this
+     */
+    public function setVersion($version)
+    {
+        $this->version = $version;
+
+        return $this;
     }
 
     /**
