@@ -18,7 +18,6 @@
         "cache/cache": "^0.4.0",
         "guzzlehttp/psr7": "^1.4",
         "guzzlehttp/promises": "^1.3",
-        "defuse/php-encryption": "^2.0",
         "doctrine/inflector": "^1.1",
         "weew/helpers-array": "^1.3"
     },
