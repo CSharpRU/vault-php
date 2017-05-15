@@ -22,7 +22,9 @@ class ResponseBuilder
      */
     public function build(ResponseInterface $response)
     {
-        $data = ModelHelper::camelize(json_decode((string)$response->getBody(), true) ?: []);
+        $rawData = json_decode((string)$response->getBody(), true) ?: [];
+        $data = ModelHelper::camelize($rawData);
+        $data['data'] = ArrayHelper::getValue($rawData, 'data', []);
 
         if ($auth = ArrayHelper::getValue($data, 'auth')) {
             $data['auth'] = new Auth($auth);
