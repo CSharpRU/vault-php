@@ -17,6 +17,7 @@ use Vault\Builders\ResponseBuilder;
 use Vault\Exceptions\ClientException;
 use Vault\Exceptions\DependencyException;
 use Vault\Exceptions\ServerException;
+use Vault\Helpers\ModelHelper;
 use Vault\Models\Token;
 use Vault\ResponseModels\Response;
 use Vault\Transports\Transport;
@@ -116,7 +117,7 @@ class Client implements LoggerAwareInterface
             // get info about self
             $response = $this->get('/v1/auth/token/lookup-self');
 
-            $this->token = new Token(array_merge($response->getData(), ['auth' => $auth]));
+            $this->token = new Token(array_merge(ModelHelper::camelize($response->getData()), ['auth' => $auth]));
 
             $this->logger->debug(sprintf('My ID is (%s).', $this->token->getId()));
             $this->logger->debug(sprintf('My creation time is (%s).', $this->token->getCreationTime()));
