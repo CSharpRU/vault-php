@@ -146,8 +146,14 @@ class Client implements LoggerAwareInterface
         /** @var Token $token */
         $token = $this->cache->getItem(self::TOKEN_CACHE_KEY)->get();
 
+        if (!$token || !$token->getAuth()) {
+            $this->logger->debug('No token in cache or auth is empty, returning null.');
+
+            return null;
+        }
+
         // invalidate token
-        if (!$token || time() > $token->getCreationTime() + $token->getCreationTtl()) {
+        if (time() > $token->getCreationTime() + $token->getCreationTtl()) {
             $this->logger->debug(sprintf('Token %s is expired.', $token->getAuth()->getClientToken()));
 
             return null;
