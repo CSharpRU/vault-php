@@ -94,6 +94,8 @@ class Client implements LoggerAwareInterface
         if ($this->token = $this->getTokenFromCache()) {
             $this->logger->debug('Using token from cache.');
 
+            $this->writeTokenInfoToDebugLog();
+
             return (bool)$this->token;
         }
 
@@ -106,10 +108,10 @@ class Client implements LoggerAwareInterface
             ));
         }
 
-        $this->logger->debug('Trying to authenticate (%s).');
+        $this->logger->debug('Trying to authenticate.');
 
         if ($auth = $this->authenticationStrategy->authenticate()) {
-            $this->logger->debug(sprintf('Authentication was successful (%s).', $auth->getClientToken()));
+            $this->logger->debug('Authentication was successful.', ['clientToken' => $auth->getClientToken()]);
 
             // temporary
             $this->token = new Token(['auth' => $auth]);
@@ -119,9 +121,7 @@ class Client implements LoggerAwareInterface
 
             $this->token = new Token(array_merge(ModelHelper::camelize($response->getData()), ['auth' => $auth]));
 
-            $this->logger->debug(sprintf('My ID is (%s).', $this->token->getId()));
-            $this->logger->debug(sprintf('My creation time is (%s).', $this->token->getCreationTime()));
-            $this->logger->debug(sprintf('My creation TTL is (%s).', $this->token->getCreationTtl()));
+            $this->writeTokenInfoToDebugLog();
 
             $this->putTokenIntoCache();
 
@@ -155,12 +155,24 @@ class Client implements LoggerAwareInterface
 
         // invalidate token
         if (time() > $token->getCreationTime() + $token->getCreationTtl()) {
-            $this->logger->debug(sprintf('Token %s is expired.', $token->getAuth()->getClientToken()));
+            $this->logger->debug('Token is expired.');
+
+            $this->writeTokenInfoToDebugLog();
 
             return null;
         }
 
         return $token;
+    }
+
+    private function writeTokenInfoToDebugLog()
+    {
+        $this->logger->debug('Token info.', [
+            'clientToken' => $this->token->getAuth()->getClientToken(),
+            'id' => $this->token->getId(),
+            'creationTime' => $this->token->getCreationTime(),
+            'ttl' => $this->token->getCreationTtl(),
+        ]);
     }
 
     /**
@@ -201,25 +213,32 @@ class Client implements LoggerAwareInterface
             $request = $request->withHeader('X-Vault-Token', $this->token->getAuth()->getClientToken());
         }
 
-        $this->logger->info(sprintf('%s "%s"', $request->getMethod(), $request->getUri()));
-        $this->logger->debug(sprintf(
-            "Request: \n%s\n%s\n%s",
-            $request->getUri(),
-            $request->getMethod(),
-            json_encode($request->getHeaders())
-        ));
+        $this->logger->debug('Request.', [
+            'method' => $request->getMethod(),
+            'uri' => $request->getUri(),
+            'headers' => $request->getHeaders(),
+            'body' => $request->getBody()->getContents(),
+        ]);
 
         try {
             $response = $this->transport->send($request, $options);
         } catch (TransferException $e) {
-            $message = sprintf('Something went wrong when calling Vault (%s).', $e->getMessage());
+            $this->logger->error('Something went wrong when calling Vault.', [
+                'code' => $e->getCode(),
+                'message' => $e->getMessage(),
+            ]);
 
-            $this->logger->error($message);
+            $this->logger->debug('Trace.', ['exception' => $e]);
 
-            throw new ServerException($message);
+            throw new ServerException(sprintf('Something went wrong when calling Vault (%s).', $e->getMessage()));
         }
 
-        $this->logger->debug(sprintf("Response: \n%s", (string)$response->getBody()));
+        $this->logger->debug('Response.', [
+            'statusCode' => $response->getStatusCode(),
+            'reasonPhrase' => $response->getReasonPhrase(),
+            'headers ' => $response->getHeaders(),
+            'body' => $response->getBody()->getContents(),
+        ]);
 
         $this->checkResponse($response);
 
@@ -237,20 +256,11 @@ class Client implements LoggerAwareInterface
     {
         if ($response->getStatusCode() >= 400) {
             $message = sprintf(
-                'Something went wrong when calling Vault (%s - %s).',
+                "Something went wrong when calling Vault (%s - %s)\n%s.",
                 $response->getStatusCode(),
-                $response->getReasonPhrase()
-            );
-
-            $this->logger->error($message);
-            $this->logger->debug(sprintf(
-                "Response: \n%s\n%s\n%s",
-                $response->getStatusCode(),
-                json_encode($response->getHeaders()),
+                $response->getReasonPhrase(),
                 $response->getBody()->getContents()
-            ));
-
-            $message .= "\n" . (string)$response->getBody();
+            );
 
             if ($response->getStatusCode() >= 500) {
                 throw new ServerException($message, $response->getStatusCode(), $response);
@@ -377,7 +387,7 @@ class Client implements LoggerAwareInterface
             return $path;
         }
 
-        return sprintf('%s%s', $this->version, $path);
+        return sprintf('/%s%s', $this->version, $path);
     }
 
     /**
