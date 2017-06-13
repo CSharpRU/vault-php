@@ -9,12 +9,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\NullLogger;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
-use Vault\Backends\BackendFactory;
 use Vault\Client;
 use Vault\Exceptions\ClientException;
 use Vault\Exceptions\DependencyException;
 use Vault\Exceptions\ServerException;
 use Vault\Models\Token;
+use Vault\ResponseModels\Auth;
 use Vault\Transports\Transport;
 use VaultTransports\Guzzle6Transport;
 
@@ -175,7 +175,10 @@ class ClientTest extends \Codeception\Test\Unit
         /** @var CacheItem $token */
         $tokenCacheItem = $cache->getItem(Client::TOKEN_CACHE_KEY);
 
-        $tokenCacheItem->set(new Token(array_merge($tokenCacheItem->get()->toArray(), ['creationTtl' => 0])));
+        $tokenAsArray = $tokenCacheItem->get()->toArray();
+        $tokenAsArray['auth'] = new Auth($tokenAsArray['auth']);
+
+        $tokenCacheItem->set(new Token(array_merge($tokenAsArray, ['creationTtl' => 0])));
 
         $cache->save($tokenCacheItem);
 
