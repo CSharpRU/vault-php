@@ -379,7 +379,7 @@ class Client implements LoggerAwareInterface
      *
      * @return string
      */
-    protected function buildPath($path)
+    public function buildPath($path)
     {
         if (!$this->version) {
             $this->logger->warning('API version is not set!');
