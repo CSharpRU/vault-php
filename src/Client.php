@@ -36,6 +36,13 @@ class Client implements LoggerAwareInterface
     use LoggerAwareTrait;
 
     /**
+     * Threshold of re-authentication attempts.
+     *
+     * @var int
+     */
+    protected $reAuthenticationThreshold = 3;
+
+    /**
      * @var string
      */
     protected $version = self::VERSION_1;
@@ -66,6 +73,11 @@ class Client implements LoggerAwareInterface
     protected $responseBuilder;
 
     /**
+     * @var int
+     */
+    private $reAuthenticationCounter = 0;
+
+    /**
      * Client constructor.
      *
      * @param Transport       $transport
@@ -76,6 +88,170 @@ class Client implements LoggerAwareInterface
         $this->transport = $transport;
         $this->logger = $logger ?: new NullLogger();
         $this->responseBuilder = new ResponseBuilder();
+    }
+
+    /**
+     * @param string $url
+     * @param array  $options
+     *
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function head($url, array $options = [])
+    {
+        return $this->responseBuilder->build($this->send(new Request('HEAD', $url), $options));
+    }
+
+    /**
+     * @param RequestInterface $request
+     * @param array            $options
+     *
+     * @return ResponseInterface
+     *
+     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function send(RequestInterface $request, array $options = [])
+    {
+        $request = $request->withHeader('User-Agent', 'VaultPHP/1.0.0');
+        $request = $request->withHeader('Content-Type', 'application/json');
+
+        if ($this->token) {
+            $request = $request->withHeader('X-Vault-Token', $this->token->getAuth()->getClientToken());
+        }
+
+        $this->logger->debug('Request.', [
+            'method' => $request->getMethod(),
+            'uri' => $request->getUri(),
+            'headers' => $request->getHeaders(),
+            'body' => $request->getBody()->getContents(),
+        ]);
+
+        try {
+            $response = $this->transport->send($request, $options);
+        } catch (TransferException $e) {
+            $this->logger->error('Something went wrong when calling Vault.', [
+                'code' => $e->getCode(),
+                'message' => $e->getMessage(),
+            ]);
+
+            $this->logger->debug('Trace.', ['exception' => $e]);
+
+            throw new ServerException(sprintf('Something went wrong when calling Vault (%s).', $e->getMessage()));
+        }
+
+        $this->logger->debug('Response.', [
+            'statusCode' => $response->getStatusCode(),
+            'reasonPhrase' => $response->getReasonPhrase(),
+            'headers ' => $response->getHeaders(),
+            'body' => $response->getBody()->getContents(),
+        ]);
+
+        // retry request if true
+        if ($this->checkResponse($response)) {
+            return $this->send($request, $options);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Returns true whenever request should be retried.
+     *
+     * @param ResponseInterface $response
+     *
+     * @return bool
+     *
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \RuntimeException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    protected function checkResponse(ResponseInterface $response)
+    {
+        // start re-authentication process if got 403 code and token is expired
+        if (
+            $response->getStatusCode() === 403 &&
+            !$this->isReAuthenticationInProgress() &&
+            $this->isTokenExpired($this->token) &&
+            $this->reAuthenticate()
+        ) {
+            return true;
+        }
+
+        if ($response->getStatusCode() >= 400) {
+            $message = sprintf(
+                "Something went wrong when calling Vault (%s - %s)\n%s.",
+                $response->getStatusCode(),
+                $response->getReasonPhrase(),
+                $response->getBody()->getContents()
+            );
+
+            if ($response->getStatusCode() >= 500) {
+                throw new ServerException($message, $response->getStatusCode(), $response);
+            }
+
+            throw new ClientException($message, $response->getStatusCode(), $response);
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    private function isReAuthenticationInProgress()
+    {
+        return $this->reAuthenticationCounter > 0;
+    }
+
+    /**
+     * @param Token $token
+     *
+     * @return bool
+     */
+    private function isTokenExpired($token)
+    {
+        return !$token ||
+            (
+                $token->getCreationTtl() > 0 &&
+                time() > $token->getCreationTime() + $token->getCreationTtl()
+            );
+    }
+
+    /**
+     * @return bool
+     *
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    protected function reAuthenticate()
+    {
+        while ($this->reAuthenticationCounter < $this->reAuthenticationThreshold) {
+            $this->reAuthenticationCounter++;
+
+            try {
+                $this->logger->debug('Trying to re-authenticate.');
+
+                if (!$this->authenticate()) {
+                    throw new \RuntimeException('Cannot re-authenticate.');
+                }
+
+                return true;
+            } catch (\Exception $e) {
+                // just skip all exceptions
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -122,8 +298,8 @@ class Client implements LoggerAwareInterface
             $this->token = new Token(array_merge(ModelHelper::camelize($response->getData()), ['auth' => $auth]));
 
             $this->writeTokenInfoToDebugLog();
-
             $this->putTokenIntoCache();
+            $this->resetReAuthenticationCounter();
 
             return true;
         }
@@ -154,7 +330,7 @@ class Client implements LoggerAwareInterface
         }
 
         // invalidate token
-        if (time() > $token->getCreationTime() + $token->getCreationTtl()) {
+        if ($this->isTokenExpired($token)) {
             $this->logger->debug('Token is expired.');
 
             $this->writeTokenInfoToDebugLog();
@@ -167,6 +343,12 @@ class Client implements LoggerAwareInterface
 
     private function writeTokenInfoToDebugLog()
     {
+        if (!$this->token) {
+            $this->logger->debug('Token is null, cannot write info to debug, potential error.');
+
+            return;
+        }
+
         $this->logger->debug('Token info.', [
             'clientToken' => $this->token->getAuth()->getClientToken(),
             'id' => $this->token->getId(),
@@ -193,84 +375,6 @@ class Client implements LoggerAwareInterface
     }
 
     /**
-     * @param RequestInterface $request
-     * @param array            $options
-     *
-     * @return ResponseInterface
-     *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
-     */
-    public function send(RequestInterface $request, array $options = [])
-    {
-        $request = $request->withHeader('User-Agent', 'VaultPHP/1.0.0');
-        $request = $request->withHeader('Content-Type', 'application/json');
-
-        if ($this->token) {
-            $request = $request->withHeader('X-Vault-Token', $this->token->getAuth()->getClientToken());
-        }
-
-        $this->logger->debug('Request.', [
-            'method' => $request->getMethod(),
-            'uri' => $request->getUri(),
-            'headers' => $request->getHeaders(),
-            'body' => $request->getBody()->getContents(),
-        ]);
-
-        try {
-            $response = $this->transport->send($request, $options);
-        } catch (TransferException $e) {
-            $this->logger->error('Something went wrong when calling Vault.', [
-                'code' => $e->getCode(),
-                'message' => $e->getMessage(),
-            ]);
-
-            $this->logger->debug('Trace.', ['exception' => $e]);
-
-            throw new ServerException(sprintf('Something went wrong when calling Vault (%s).', $e->getMessage()));
-        }
-
-        $this->logger->debug('Response.', [
-            'statusCode' => $response->getStatusCode(),
-            'reasonPhrase' => $response->getReasonPhrase(),
-            'headers ' => $response->getHeaders(),
-            'body' => $response->getBody()->getContents(),
-        ]);
-
-        $this->checkResponse($response);
-
-        return $response;
-    }
-
-    /**
-     * @param ResponseInterface $response
-     *
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \RuntimeException
-     */
-    protected function checkResponse(ResponseInterface $response)
-    {
-        if ($response->getStatusCode() >= 400) {
-            $message = sprintf(
-                "Something went wrong when calling Vault (%s - %s)\n%s.",
-                $response->getStatusCode(),
-                $response->getReasonPhrase(),
-                $response->getBody()->getContents()
-            );
-
-            if ($response->getStatusCode() >= 500) {
-                throw new ServerException($message, $response->getStatusCode(), $response);
-            }
-
-            throw new ClientException($message, $response->getStatusCode(), $response);
-        }
-    }
-
-    /**
      * @TODO: move to separated class
      *
      * @return bool
@@ -290,21 +394,9 @@ class Client implements LoggerAwareInterface
         return $this->cache->save($authItem);
     }
 
-    /**
-     * @param string $url
-     * @param array  $options
-     *
-     * @return Response
-     *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
-     */
-    public function head($url, array $options = [])
+    private function resetReAuthenticationCounter()
     {
-        return $this->responseBuilder->build($this->send(new Request('HEAD', $url), $options));
+        $this->reAuthenticationCounter = 0;
     }
 
     /**
@@ -589,6 +681,26 @@ class Client implements LoggerAwareInterface
     public function setResponseBuilder(ResponseBuilder $responseBuilder)
     {
         $this->responseBuilder = $responseBuilder;
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getReAuthenticationThreshold()
+    {
+        return $this->reAuthenticationThreshold;
+    }
+
+    /**
+     * @param int $reAuthenticationThreshold
+     *
+     * @return $this
+     */
+    public function setReAuthenticationThreshold($reAuthenticationThreshold)
+    {
+        $this->reAuthenticationThreshold = $reAuthenticationThreshold > 0 ? $reAuthenticationThreshold : 0;
 
         return $this;
     }
