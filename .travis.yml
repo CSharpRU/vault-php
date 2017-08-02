@@ -10,4 +10,4 @@ install:
 script:
   - php vendor/bin/codecept run --coverage-xml
 after_script:
-  - php vendor/bin/codacycoverage clover tests/_output/coverage.xml
+  - php vendor/bin/codacycoverage phpunit tests/_output/coverage.xml
