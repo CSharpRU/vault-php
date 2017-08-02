@@ -1,5 +1,7 @@
 # README #
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/0bf9f46a659844658d847c1b2ab01e8b)](https://www.codacy.com/app/c_sharp/vault-php?utm_source=github.com&utm_medium=referral&utm_content=CSharpRU/vault-php&utm_campaign=badger)
+
 ### Vault PHP client ###
 
 Version: 3.2.0
