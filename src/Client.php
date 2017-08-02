@@ -156,54 +156,30 @@ class Client implements LoggerAwareInterface
             'body' => $response->getBody()->getContents(),
         ]);
 
-        // retry request if true
-        if ($this->checkResponse($response)) {
+        if ($this->isNeedToRetryRequest($response)) {
             return $this->send($request, $options);
         }
+
+        $this->checkResponse($response);
 
         return $response;
     }
 
     /**
-     * Returns true whenever request should be retried.
-     *
      * @param ResponseInterface $response
      *
      * @return bool
      *
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \RuntimeException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    protected function checkResponse(ResponseInterface $response)
+    protected function isNeedToRetryRequest(ResponseInterface $response)
     {
         // start re-authentication process if got 403 code and token is expired
-        if (
-            $response->getStatusCode() === 403 &&
+        // isReAuthenticationInProgress check prevents additional calls to reAuthenticate method
+        return $response->getStatusCode() === 403 &&
             !$this->isReAuthenticationInProgress() &&
             $this->isTokenExpired($this->token) &&
-            $this->reAuthenticate()
-        ) {
-            return true;
-        }
-
-        if ($response->getStatusCode() >= 400) {
-            $message = sprintf(
-                "Something went wrong when calling Vault (%s - %s)\n%s.",
-                $response->getStatusCode(),
-                $response->getReasonPhrase(),
-                $response->getBody()->getContents()
-            );
-
-            if ($response->getStatusCode() >= 500) {
-                throw new ServerException($message, $response->getStatusCode(), $response);
-            }
-
-            throw new ClientException($message, $response->getStatusCode(), $response);
-        }
-
-        return false;
+            $this->reAuthenticate();
     }
 
     /**
@@ -235,23 +211,27 @@ class Client implements LoggerAwareInterface
      */
     protected function reAuthenticate()
     {
-        while ($this->reAuthenticationCounter < $this->reAuthenticationThreshold) {
-            $this->reAuthenticationCounter++;
+        // increment counter for isReAuthenticationInProgress
+        $this->reAuthenticationCounter++;
 
-            try {
-                $this->logger->debug('Trying to re-authenticate.');
-
-                if (!$this->authenticate()) {
-                    throw new \RuntimeException('Cannot re-authenticate.');
-                }
-
-                return true;
-            } catch (\Exception $e) {
-                // just skip all exceptions
-            }
+        // stop recursion if we're greater or equal to the threshold
+        if ($this->reAuthenticationCounter >= $this->reAuthenticationThreshold) {
+            return false;
         }
 
-        return false;
+        try {
+            $this->logger->debug('Trying to re-authenticate.', ['attempt' => $this->reAuthenticationCounter]);
+
+            if (!$this->authenticate()) {
+                throw new \RuntimeException('Cannot re-authenticate.');
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            // just skip all exceptions
+        }
+
+        return $this->reAuthenticate();
     }
 
     /**
@@ -397,6 +377,32 @@ class Client implements LoggerAwareInterface
     private function resetReAuthenticationCounter()
     {
         $this->reAuthenticationCounter = 0;
+    }
+
+    /**
+     * Returns true whenever request should be retried.
+     *
+     * @param ResponseInterface $response
+     *
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \Vault\Exceptions\ServerException
+     */
+    protected function checkResponse(ResponseInterface $response)
+    {
+        if ($response->getStatusCode() >= 400) {
+            $message = sprintf(
+                "Something went wrong when calling Vault (%s - %s)\n%s.",
+                $response->getStatusCode(),
+                $response->getReasonPhrase(),
+                $response->getBody()->getContents()
+            );
+
+            if ($response->getStatusCode() >= 500) {
+                throw new ServerException($message, $response->getStatusCode(), $response);
+            }
+
+            throw new ClientException($message, $response->getStatusCode(), $response);
+        }
     }
 
     /**
