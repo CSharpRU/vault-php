@@ -190,6 +190,66 @@ class ClientTest extends \Codeception\Test\Unit
         $this->assertNotEquals($realToken, $newToken);
     }
 
+    public function testReAuthentication()
+    {
+        $transport = Stub::makeEmpty(Transport::class, [
+            'createRequest' => function () {
+                return Stub::makeEmpty(RequestInterface::class, []);
+            },
+            'send' => function () {
+                return Stub::makeEmpty(ResponseInterface::class, [
+                    'getStatusCode' => function () {
+                        return 403;
+                    },
+                    'getReasonPhrase' => function () {
+                        return '';
+                    },
+                    'getHeaders' => function () {
+                        return [];
+                    },
+                    'getBody' => function () {
+                        return Stub::makeEmpty(StreamInterface::class, [
+                            'getContents' => function () {
+                                return '';
+                            },
+                        ]);
+                    },
+                ]);
+            },
+        ]);
+
+        $client = (new Client($transport))->setReAuthenticationThreshold(10);
+
+        try {
+            $client->get('');
+        } catch (Exception $e) {
+            $this->assertAttributeEquals(10, 'reAuthenticationCounter', $client);
+
+            $this->assertInstanceOf(ClientException::class, $e);
+            $this->assertInstanceOf(ResponseInterface::class, $e->getResponse());
+        }
+    }
+
+    protected function setUp()
+    {
+        \VCR\VCR::turnOn();
+
+        \VCR\VCR::insertCassette('unit-client');
+
+        return parent::setUp();
+    }
+
+    protected function tearDown()
+    {
+        // To stop recording requests, eject the cassette
+        \VCR\VCR::eject();
+
+        // Turn off VCR to stop intercepting requests
+        \VCR\VCR::turnOff();
+
+        parent::tearDown();
+    }
+
     protected function _before()
     {
     }

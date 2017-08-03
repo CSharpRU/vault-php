@@ -22,17 +22,17 @@ class ArrayHelper
         $array = [];
 
         if ($object instanceof Object) {
-            $array = $object->toArray($recursive);
-        } else {
-            foreach ($object as $key => $value) {
-                if ($value instanceof Object) {
-                    $newValue = $value->toArray($recursive);
-                } else {
-                    $newValue = (is_array($value) || is_object($value)) && $recursive ? self::toArray($value) : $value;
-                }
+            return $object->toArray($recursive);
+        }
 
-                $array[$key] = $newValue;
+        foreach ($object as $key => $value) {
+            if ($value instanceof Object) {
+                $newValue = $value->toArray($recursive);
+            } else {
+                $newValue = (is_array($value) || is_object($value)) && $recursive ? self::toArray($value) : $value;
             }
+
+            $array[$key] = $newValue;
         }
 
         return $array;
