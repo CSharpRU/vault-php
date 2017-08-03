@@ -5,6 +5,11 @@
 
 This is a PHP client for Vault - a tool for managing secrets.
 
+## Features
+
+* Supports different authentication backends (right now userpass only) with token caching and re-authentication.
+* Different transports for different PHP versions.
+
 ## Installing / Getting started
 
 Simply run this command within your directory with composer.json. 
@@ -29,17 +34,13 @@ composer install
 
 Now you're ready to write tests and code.
 
-## Features
-
-* Supports different authentication backends (right now userpass only) with token caching and re-authentication.
-* Different transports for different PHP versions.
-
 ## Contributing
 
 If you'd like to contribute, please fork the repository and use a feature
 branch. Pull requests are warmly welcome.
 
 Little hints for new contributors:
+* This repository follows gitflow and semver.
 * Please follow PSR and other good coding standards.
 
 ## Licensing
