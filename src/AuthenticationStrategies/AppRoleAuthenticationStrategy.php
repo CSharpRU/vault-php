@@ -49,11 +49,11 @@ class AppRoleAuthenticationStrategy extends AbstractAuthenticationStrategy
         $response = $this->client->write(
             '/auth/approle/login',
             [
-            	'role_id' => $this->roleId,
-            	'secret_id' => $this->secretId
+                'role_id' => $this->roleId,
+                'secret_id' => $this->secretId,
             ]
         );
-        
+
         return $response->getAuth();
     }
 }
