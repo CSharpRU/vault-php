@@ -10,11 +10,18 @@ Welcome to Vault PHP Client's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+This is a PHP client for Vault - a tool for managing secrets.
 
+Quick start
+-----------
+
+.. code-block:: php
+
+    <?php
+
+    use Vault\Client;
 
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
