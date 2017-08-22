@@ -10,12 +10,44 @@ This is a PHP client for Vault - a tool for managing secrets.
 Simply run this command within your directory with composer.json. 
 
 ```shell
-composer require vault-php
+composer require "csharpru/vault-php"
 ```
 
 ## Documentation
 
 TODO
+
+### Examples
+````
+
+use Vault\Client;
+use VaultTransports\Guzzle5Transport;
+use VaultTransports\Guzzle6Transport;
+
+// Creating the client
+$client = new Client(new Guzzle5Transport()); //Using Guzzle5 Transport
+$client = new Client(new Guzzle6Transport()); //Using Guzzle6 Transport
+$client = new Client(new Guzzle5Transport(array('base_url' => 'http://10.10.3.39:8200'))); //Passsing a custom url
+
+// Authenticating using userpass auth backend.
+use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
+
+$authenticated = $client
+                  ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
+                  ->authenticate();
+
+// Authenticating using approle auth backend.
+use Vault\AuthenticationStrategies\AppRoleAuthenticationStrategy;
+
+$authenticated = $client
+                  ->setAuthenticationStrategy(
+                    new AppRoleAuthenticationStrategy(
+                      'd4131206-384f-75fa-11d6-55d1d63c07c0', 
+                      'cac86a12-c566-3932-09f3-5823ccdfa606'
+                    ))
+                  ->authenticate();
+
+````
 
 ## Developing
 
