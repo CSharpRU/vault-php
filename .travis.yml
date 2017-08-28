@@ -3,7 +3,7 @@ php:
   - '5.6'
   - '7.0'
   - '7.1'
-  - nightly
+#  - nightly
 sudo: required
 install:
   - composer install -n
