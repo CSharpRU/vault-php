@@ -15,7 +15,7 @@ This is a PHP client for Vault - a tool for managing secrets.
 Simply run this command within your directory with composer.json. 
 
 ```shell
-composer require vault-php
+composer require csharpru/vault-php
 ```
 
 ## Documentation
