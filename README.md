@@ -7,7 +7,7 @@ This is a PHP client for Vault - a tool for managing secrets.
 
 ## Features
 
-* Supports different authentication backends (right now userpass only) with token caching and re-authentication.
+* Supports different authentication backends with token caching and re-authentication.
 * Different transports for different PHP versions.
 
 ## Installing / Getting started
