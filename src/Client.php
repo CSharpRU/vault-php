@@ -334,7 +334,7 @@ class Client extends BaseClient
         }
 
         $this->logger->debug('Token info.', [
-            'clientToken' => $this->token->getAuth()->getClientToken(),
+            'clientToken' => $this->token->getAuth() ? $this->token->getAuth()->getClientToken() : null,
             'id' => $this->token->getId(),
             'creationTime' => $this->token->getCreationTime(),
             'ttl' => $this->token->getCreationTtl(),
