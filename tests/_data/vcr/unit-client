@@ -43,7 +43,7 @@
             Content-Type: application/json
             Date: 'Tue, 01 Aug 2017 06:54:33 GMT'
             Content-Length: '504'
-        body: "{\"request_id\":\"ab3f3dc9-3633-0c18-44e2-f3f58cb56d0a\",\"lease_id\":\"\",\"renewable\":false,\"lease_duration\":0,\"data\":{\"accessor\":\"033ccada-d332-9415-0acc-0ec51e81dbd1\",\"creation_time\":1501570473,\"creation_ttl\":2764800,\"display_name\":\"userpass-test\",\"explicit_max_ttl\":0,\"id\":\"9e64c3b8-01f7-7a64-1575-30a91f7d1ae4\",\"meta\":{\"username\":\"test\"},\"num_uses\":0,\"orphan\":true,\"path\":\"auth/userpass/login/test\",\"policies\":[\"default\",\"test\"],\"renewable\":true,\"ttl\":2764800},\"wrap_info\":null,\"warnings\":null,\"auth\":null}\n"
+        body: "{\"request_id\":\"ab3f3dc9-3633-0c18-44e2-f3f58cb56d0a\",\"lease_id\":\"\",\"renewable\":false,\"lease_duration\":0,\"data\":{\"accessor\":\"033ccada-d332-9415-0acc-0ec51e81dbd1\",\"creation_time\":1501570473,\"creation_ttl\":0,\"display_name\":\"userpass-test\",\"explicit_max_ttl\":0,\"id\":\"9e64c3b8-01f7-7a64-1575-30a91f7d1ae4\",\"meta\":{\"username\":\"test\"},\"num_uses\":0,\"orphan\":true,\"path\":\"auth/userpass/login/test\",\"policies\":[\"default\",\"test\"],\"renewable\":true,\"ttl\":2764800},\"wrap_info\":null,\"warnings\":null,\"auth\":null}\n"
 -
     request:
         method: POST
