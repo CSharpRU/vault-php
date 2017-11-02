@@ -161,9 +161,12 @@ class ClientTest extends \Codeception\Test\Unit
 
         $client = (new Client(new Guzzle6Transport()))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
-            ->setCache($cache);
-
-        $this->assertTrue($client->authenticate());
+            ->setCache($cache)
+            ->setToken(new Token([
+                'auth' => new Auth(['clientToken' => '123']),
+                'creationTime' => time(),
+                'creationTtl' => 300,
+            ]));
 
         $realToken = $client->getToken();
 
@@ -188,46 +191,6 @@ class ClientTest extends \Codeception\Test\Unit
 
         $this->assertNotEmpty($newToken);
         $this->assertNotEquals($realToken, $newToken);
-    }
-
-    public function testReAuthentication()
-    {
-        $transport = Stub::makeEmpty(Transport::class, [
-            'createRequest' => function () {
-                return Stub::makeEmpty(RequestInterface::class, []);
-            },
-            'send' => function () {
-                return Stub::makeEmpty(ResponseInterface::class, [
-                    'getStatusCode' => function () {
-                        return 403;
-                    },
-                    'getReasonPhrase' => function () {
-                        return '';
-                    },
-                    'getHeaders' => function () {
-                        return [];
-                    },
-                    'getBody' => function () {
-                        return Stub::makeEmpty(StreamInterface::class, [
-                            'getContents' => function () {
-                                return '';
-                            },
-                        ]);
-                    },
-                ]);
-            },
-        ]);
-
-        $client = (new Client($transport))->setReAuthenticationThreshold(10);
-
-        try {
-            $client->get('');
-        } catch (Exception $e) {
-            $this->assertAttributeEquals(10, 'reAuthenticationCounter', $client);
-
-            $this->assertInstanceOf(ClientException::class, $e);
-            $this->assertInstanceOf(ResponseInterface::class, $e->getResponse());
-        }
     }
 
     protected function setUp()

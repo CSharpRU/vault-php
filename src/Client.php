@@ -4,9 +4,12 @@ namespace Vault;
 
 use Cache\Adapter\Common\CacheItem;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Vault\AuthenticationStrategies\AuthenticationStrategy;
+use Vault\Exceptions\ClientException;
 use Vault\Exceptions\DependencyException;
+use Vault\Exceptions\ServerException;
 use Vault\Helpers\ModelHelper;
 use Vault\Models\Token;
 use Vault\ResponseModels\Response;
@@ -21,13 +24,6 @@ class Client extends BaseClient
     const TOKEN_CACHE_KEY = 'token';
 
     /**
-     * Threshold of re-authentication attempts.
-     *
-     * @var int
-     */
-    protected $reAuthenticationThreshold = 3;
-
-    /**
      * @var CacheItemPoolInterface
      */
     protected $cache;
@@ -36,11 +32,6 @@ class Client extends BaseClient
      * @var AuthenticationStrategy
      */
     protected $authenticationStrategy;
-
-    /**
-     * @var int
-     */
-    private $reAuthenticationCounter = 0;
 
     /**
      * @param string $path
@@ -150,48 +141,28 @@ class Client extends BaseClient
     }
 
     /**
-     * @return int
-     */
-    public function getReAuthenticationThreshold()
-    {
-        return $this->reAuthenticationThreshold;
-    }
-
-    /**
-     * @param int $reAuthenticationThreshold
-     *
-     * @return $this
-     */
-    public function setReAuthenticationThreshold($reAuthenticationThreshold)
-    {
-        $this->reAuthenticationThreshold = $reAuthenticationThreshold > 0 ? $reAuthenticationThreshold : 0;
-
-        return $this;
-    }
-
-    /**
-     * @param ResponseInterface $response
-     *
-     * @return bool
+     * @inheritdoc
      *
      * @throws \Psr\Cache\InvalidArgumentException
+     * @throws \Vault\Exceptions\DependencyException
      */
-    protected function isNeedToRetryRequest(ResponseInterface $response)
+    public function send(RequestInterface $request, array $options = [])
     {
-        // start re-authentication process if got 403 code and token is expired
-        // isReAuthenticationInProgress check prevents additional calls to reAuthenticate method
-        return $response->getStatusCode() === 403 &&
-            !$this->isReAuthenticationInProgress() &&
-            $this->isTokenExpired($this->token) &&
-            $this->reAuthenticate();
-    }
+        $response = parent::send($request, $options);
 
-    /**
-     * @return bool
-     */
-    protected function isReAuthenticationInProgress()
-    {
-        return $this->reAuthenticationCounter > 0;
+        // re-authenticate if 403 and token is expired
+        if (
+            $this->token &&
+            $response->getStatusCode() === 403 &&
+            $this->isTokenExpired($this->token) &&
+            !$this->authenticate()
+        ) {
+            throw new ClientException('Cannot re-authenticate.');
+        }
+
+        $this->checkResponse($response);
+
+        return $response;
     }
 
     /**
@@ -206,36 +177,6 @@ class Client extends BaseClient
                 $token->getCreationTtl() > 0 &&
                 time() > $token->getCreationTime() + $token->getCreationTtl()
             );
-    }
-
-    /**
-     * @return bool
-     *
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
-    protected function reAuthenticate()
-    {
-        // increment counter for isReAuthenticationInProgress
-        $this->reAuthenticationCounter++;
-
-        // stop recursion if we're greater or equal to the threshold
-        if ($this->reAuthenticationCounter >= $this->reAuthenticationThreshold) {
-            return false;
-        }
-
-        try {
-            $this->logger->debug('Trying to re-authenticate.', ['attempt' => $this->reAuthenticationCounter]);
-
-            if (!$this->authenticate()) {
-                throw new \RuntimeException('Cannot re-authenticate.');
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            // just skip all exceptions
-        }
-
-        return $this->reAuthenticate();
     }
 
     /**
@@ -283,7 +224,6 @@ class Client extends BaseClient
 
             $this->writeTokenInfoToDebugLog();
             $this->putTokenIntoCache();
-            $this->resetReAuthenticationCounter();
 
             return true;
         }
@@ -345,11 +285,16 @@ class Client extends BaseClient
      * @TODO: move to separated class
      *
      * @return bool
+     * @throws \Vault\Exceptions\ClientException
      */
     protected function putTokenIntoCache()
     {
         if (!$this->cache) {
             return true; // just ignore
+        }
+
+        if ($this->isTokenExpired($this->token)) {
+            throw new ClientException('Cannot save expired token into cache!');
         }
 
         $authItem = (new CacheItem(self::TOKEN_CACHE_KEY))
@@ -361,8 +306,43 @@ class Client extends BaseClient
         return $this->cache->save($authItem);
     }
 
-    private function resetReAuthenticationCounter()
+    /**
+     * Returns true whenever request should be retried.
+     *
+     * @param ResponseInterface $response
+     *
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \Vault\Exceptions\ServerException
+     */
+    protected function checkResponse(ResponseInterface $response)
     {
-        $this->reAuthenticationCounter = 0;
+        if ($response->getStatusCode() >= 400) {
+            $message = sprintf(
+                "Something went wrong when calling Vault (%s - %s)\n%s.",
+                $response->getStatusCode(),
+                $response->getReasonPhrase(),
+                $response->getBody()->getContents()
+            );
+
+            if ($response->getStatusCode() >= 500) {
+                throw new ServerException($message, $response->getStatusCode(), $response);
+            }
+
+            throw new ClientException($message, $response->getStatusCode(), $response);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @throws \Vault\Exceptions\ClientException
+     */
+    public function setToken(Token $token)
+    {
+        parent::setToken($token);
+
+        $this->putTokenIntoCache();
+
+        return $this;
     }
 }

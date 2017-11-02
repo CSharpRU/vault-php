@@ -11,7 +11,6 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Vault\Builders\ResponseBuilder;
-use Vault\Exceptions\ClientException;
 use Vault\Exceptions\ServerException;
 use Vault\Models\Token;
 use Vault\ResponseModels\Response;
@@ -126,46 +125,7 @@ abstract class BaseClient implements LoggerAwareInterface
             'body' => $response->getBody()->getContents(),
         ]);
 
-        if ($this->isNeedToRetryRequest($response)) {
-            return $this->send($request, $options);
-        }
-
-        $this->checkResponse($response);
-
         return $response;
-    }
-
-    /**
-     * @param ResponseInterface $response
-     *
-     * @return bool
-     */
-    protected abstract function isNeedToRetryRequest(ResponseInterface $response);
-
-    /**
-     * Returns true whenever request should be retried.
-     *
-     * @param ResponseInterface $response
-     *
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \Vault\Exceptions\ServerException
-     */
-    protected function checkResponse(ResponseInterface $response)
-    {
-        if ($response->getStatusCode() >= 400) {
-            $message = sprintf(
-                "Something went wrong when calling Vault (%s - %s)\n%s.",
-                $response->getStatusCode(),
-                $response->getReasonPhrase(),
-                $response->getBody()->getContents()
-            );
-
-            if ($response->getStatusCode() >= 500) {
-                throw new ServerException($message, $response->getStatusCode(), $response);
-            }
-
-            throw new ClientException($message, $response->getStatusCode(), $response);
-        }
     }
 
     /**
