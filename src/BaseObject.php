@@ -9,7 +9,7 @@ use Vault\Helpers\ArrayHelper;
  *
  * @package Vault
  */
-class Object
+class BaseObject
 {
     /**
      * Object constructor.

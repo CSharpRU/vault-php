@@ -2,7 +2,7 @@
 
 namespace Vault\Models;
 
-use Vault\Object;
+use Vault\BaseObject;
 use Vault\ResponseModels\Auth;
 
 /**
@@ -10,7 +10,7 @@ use Vault\ResponseModels\Auth;
  *
  * @package Vault\Models
  */
-class Token extends Object
+class Token extends BaseObject
 {
     /**
      * @var Auth

@@ -2,7 +2,7 @@
 
 namespace Vault\ResponseModels;
 
-use Vault\Object;
+use Vault\BaseObject;
 use Vault\ResponseModels\Traits\LeaseTrait;
 
 /**
@@ -10,7 +10,7 @@ use Vault\ResponseModels\Traits\LeaseTrait;
  *
  * @package Vault\Model
  */
-class Response extends Object
+class Response extends BaseObject
 {
     use LeaseTrait;
 
