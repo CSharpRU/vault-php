@@ -26,9 +26,19 @@ class CachedClient extends Client
      */
     public function read($path)
     {
+        if (!$this->readCacheEnabled) {
+            return parent::read($path);
+        }
+
+        if (!$this->cache) {
+            $this->logger->warning('Cache is enabled, but cache pool is not set.');
+
+            return parent::read($path);
+        }
+
         $key = self::READ_CACHE_KEY . str_replace(['{', '}', '(', ')', '/', '\\', '@'], '_', $path);
 
-        if ($this->cache && $this->cache->hasItem($key)) {
+        if ($this->cache->hasItem($key)) {
             $this->logger->debug('Has read response in cache.', ['path' => $path]);
 
             return $this->cache->getItem($key)->get();
@@ -36,14 +46,12 @@ class CachedClient extends Client
 
         $response = parent::read($path);
 
-        if ($this->cache) {
-            $item = (new CacheItem($key))->set($response)->expiresAfter($this->readCacheTtl);
+        $item = (new CacheItem($key))->set($response)->expiresAfter($this->readCacheTtl);
 
-            $this->logger->debug('Saving read response in cache.', ['path' => $path, 'item' => $item]);
+        $this->logger->debug('Saving read response in cache.', ['path' => $path, 'item' => $item]);
 
-            if (!$this->cache->save($item)) {
-                $this->logger->warning('Cannot save read response into cache.', ['path' => $path]);
-            }
+        if (!$this->cache->save($item)) {
+            $this->logger->warning('Cannot save read response into cache.', ['path' => $path]);
         }
 
         return $response;
