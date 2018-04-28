@@ -36,7 +36,7 @@ class CachedClient extends Client
             return parent::read($path);
         }
 
-        $key = self::READ_CACHE_KEY . str_replace(['{', '}', '(', ')', '/', '\\', '@'], '_', $path);
+        $key = self::READ_CACHE_KEY . str_replace(['{', '}', '(', ')', '/', '\\', '@', '-'], '_', $path);
 
         if ($this->cache->hasItem($key)) {
             $this->logger->debug('Has read response in cache.', ['path' => $path]);
