@@ -45,6 +45,11 @@ Quick start
         ))
         ->authenticate();
 
+    // Authenticating using token auth backend.
+    $authenticated = $client
+        ->setAuthenticationStrategy(new TokenAuthenticationStrategy('463763ae-0c3b-ff77-e137-af668941465c'))
+        ->authenticate();
+
 Indices and tables
 ==================
 
