@@ -1,0 +1,23 @@
+
+-
+    request:
+        method: GET
+        url: 'http://127.0.0.1:8200/v1/auth/token/lookup-self'
+        headers:
+            Host: '127.0.0.1:8200'
+            Accept-Encoding: null
+            User-Agent: VaultPHP/1.0.0
+            Content-Type: application/json
+            X-Vault-Token: db02de05-fa39-4855-059b-67221c5c2f63
+            Accept: null
+    response:
+        status:
+            http_version: '1.1'
+            code: '200'
+            message: OK
+        headers:
+            Cache-Control: no-store
+            Content-Type: application/json
+            Date: 'Tue, 01 Aug 2017 06:54:33 GMT'
+            Content-Length: '504'
+        body: "{\"request_id\":\"ab3f3dc9-3633-0c18-44e2-f3f58cb56d0a\",\"lease_id\":\"\",\"renewable\":false,\"lease_duration\":0,\"data\":{\"accessor\":\"033ccada-d332-9415-0acc-0ec51e81dbd1\",\"creation_time\":1501570473,\"creation_ttl\":2764800,\"display_name\":\"userpass-test\",\"explicit_max_ttl\":0,\"id\":\"db02de05-fa39-4855-059b-67221c5c2f63\",\"meta\":{\"username\":\"test\"},\"num_uses\":0,\"orphan\":true,\"path\":\"auth/userpass/login/test\",\"policies\":[\"default\",\"test\"],\"renewable\":true,\"ttl\":2764800},\"wrap_info\":null,\"warnings\":null,\"auth\":null}\n"
