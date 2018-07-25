@@ -17,6 +17,9 @@ use Vault\ResponseModels\Response;
 /**
  * Class Client
  *
+ * @todo make an interface
+ * @todo add ability to make concurrent requests
+ *
  * @package Vault
  */
 class Client extends BaseClient
