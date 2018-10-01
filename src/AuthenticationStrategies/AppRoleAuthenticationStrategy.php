@@ -21,9 +21,9 @@ class AppRoleAuthenticationStrategy extends AbstractAuthenticationStrategy
      */
     protected $secretId;
 
-	/**
-	 * @var string
-	 */
+    /**
+     * @var string
+     */
     protected $appRoleName;
 
     /**
