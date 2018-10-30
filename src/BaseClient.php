@@ -2,10 +2,12 @@
 
 namespace Vault;
 
-use GuzzleHttp\Exception\TransferException;
-use GuzzleHttp\Psr7\Request;
-use Psr\Http\Message\RequestInterface;
+use Http\Client\HttpClient;
+use Http\Discovery\HttpClientDiscovery;
+use Http\Discovery\MessageFactoryDiscovery;
+use Http\Message\MessageFactory;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
@@ -14,7 +16,6 @@ use Vault\Builders\ResponseBuilder;
 use Vault\Exceptions\ServerException;
 use Vault\Models\Token;
 use Vault\ResponseModels\Response;
-use Vault\Transports\Transport;
 
 /**
  * Class BaseClient
@@ -38,9 +39,19 @@ abstract class BaseClient implements LoggerAwareInterface
     protected $token;
 
     /**
-     * @var Transport
+     * @var UriInterface
      */
-    protected $transport;
+    protected $baseUri;
+
+    /**
+     * @var HttpClient
+     */
+    protected $httpClient;
+
+    /**
+     * @var MessageFactory
+     */
+    protected $messageFactory;
 
     /**
      * @var ResponseBuilder
@@ -50,64 +61,71 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * Client constructor.
      *
-     * @param Transport       $transport
-     * @param LoggerInterface $logger
+     * @param UriInterface         $baseUri
+     * @param HttpClient|null      $httpClient
+     * @param LoggerInterface|null $logger
      */
-    public function __construct(Transport $transport, LoggerInterface $logger = null)
-    {
-        $this->transport = $transport;
+    public function __construct(
+        UriInterface $baseUri,
+        HttpClient $httpClient = null,
+        LoggerInterface $logger = null
+    ) {
+        $this->baseUri = $baseUri;
+        $this->httpClient = $httpClient ?: HttpClientDiscovery::find();
+        $this->messageFactory = MessageFactoryDiscovery::find();
         $this->logger = $logger ?: new NullLogger();
         $this->responseBuilder = new ResponseBuilder();
     }
 
     /**
-     * @param string $url
-     * @param array  $options
+     * @param string $path
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function head($url, array $options = [])
+    public function head($path)
     {
-        return $this->responseBuilder->build($this->send(new Request('HEAD', $url), $options));
+        return $this->responseBuilder->build($this->send('HEAD', $path));
     }
 
     /**
-     * @param RequestInterface $request
-     * @param array            $options
+     * @param string $method
+     * @param string $path
+     * @param mixed  $body
      *
      * @return ResponseInterface
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function send(RequestInterface $request, array $options = [])
+    public function send($method, $path, $body = null)
     {
-        $request = $request->withHeader('User-Agent', 'VaultPHP/1.0.0');
-        $request = $request->withHeader('Content-Type', 'application/json');
+        $headers = [
+            'User-Agent' => 'VaultPHP/1.0.0',
+            'Content-Type' => 'application/json',
+        ];
 
         if ($this->token) {
-            $request = $request->withHeader('X-Vault-Token', $this->token->getAuth()->getClientToken());
+            $headers['X-Vault-Token'] = $this->token->getAuth()->getClientToken();
         }
 
+        $message = $this->messageFactory->createRequest(
+            strtoupper($method),
+            $this->baseUri->withPath($path),
+            $headers,
+            $body
+        );
+
         $this->logger->debug('Request.', [
-            'method' => $request->getMethod(),
-            'uri' => $request->getUri(),
-            'headers' => $request->getHeaders(),
-            'body' => $request->getBody()->getContents(),
+            'method' => $message->getMethod(),
+            'uri' => $message->getUri(),
+            'headers' => $message->getHeaders(),
+            'body' => $message->getBody()->getContents(),
         ]);
 
         try {
-            $response = $this->transport->send($request, $options);
-        } catch (TransferException $e) {
+            $response = $this->httpClient->sendRequest($message);
+        } catch (\Exception $e) {
             $this->logger->error('Something went wrong when calling Vault.', [
                 'code' => $e->getCode(),
                 'message' => $e->getMessage(),
@@ -129,105 +147,78 @@ abstract class BaseClient implements LoggerAwareInterface
     }
 
     /**
-     * @param string $url
-     * @param array  $options
+     * @param string $path
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function get($url = null, array $options = [])
+    public function get($path = null)
     {
-        return $this->responseBuilder->build($this->send(new Request('GET', $url), $options));
+        return $this->responseBuilder->build($this->send('GET', $path));
     }
 
     /**
-     * @param string $url
-     * @param array  $options
+     * @param string $path
+     * @param mixed  $body
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function put($url, array $options = [])
+    public function put($path, $body = null)
     {
-        return $this->responseBuilder->build($this->send(new Request('PUT', $url), $options));
+        return $this->responseBuilder->build($this->send('PUT', $path, $body));
     }
 
     /**
-     * @param string $url
-     * @param array  $options
+     * @param string $path
+     * @param mixed  $body
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function patch($url, array $options = [])
+    public function patch($path, $body = null)
     {
-        return $this->responseBuilder->build($this->send(new Request('PATCH', $url), $options));
+        return $this->responseBuilder->build($this->send('PATCH', $path, $body));
     }
 
     /**
-     * @param string $url
-     * @param array  $options
+     * @param string $path
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function options($url, array $options = [])
+    public function options($path)
     {
-        return $this->responseBuilder->build($this->send(new Request('OPTIONS', $url), $options));
+        return $this->responseBuilder->build($this->send('OPTIONS', $path));
     }
 
     /**
-     * @param string $url
-     * @param array  $options
+     * @param string $path
+     * @param mixed  $body
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function post($url, array $options = [])
+    public function post($path, $body = null)
     {
-        return $this->responseBuilder->build($this->send(new Request('POST', $url), $options));
+        return $this->responseBuilder->build($this->send('POST', $path, $body));
     }
 
     /**
-     * @param string $url
-     * @param array  $options
+     * @param string $path
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
-    public function delete($url, array $options = [])
+    public function delete($path)
     {
-        return $this->responseBuilder->build($this->send(new Request('DELETE', $url), $options));
+        return $this->responseBuilder->build($this->send('DELETE', $path));
     }
 
     /**
@@ -271,21 +262,61 @@ abstract class BaseClient implements LoggerAwareInterface
     }
 
     /**
-     * @return Transport
+     * @return UriInterface
      */
-    public function getTransport()
+    public function getBaseUri()
     {
-        return $this->transport;
+        return $this->baseUri;
     }
 
     /**
-     * @param Transport $transport
+     * @param UriInterface $baseUri
      *
      * @return $this
      */
-    public function setTransport($transport)
+    public function setBaseUri($baseUri)
     {
-        $this->transport = $transport;
+        $this->baseUri = $baseUri;
+
+        return $this;
+    }
+
+    /**
+     * @return HttpClient
+     */
+    public function getHttpClient()
+    {
+        return $this->httpClient;
+    }
+
+    /**
+     * @param HttpClient $httpClient
+     *
+     * @return $this
+     */
+    public function setHttpClient($httpClient)
+    {
+        $this->httpClient = $httpClient;
+
+        return $this;
+    }
+
+    /**
+     * @return MessageFactory
+     */
+    public function getMessageFactory()
+    {
+        return $this->messageFactory;
+    }
+
+    /**
+     * @param MessageFactory $messageFactory
+     *
+     * @return $this
+     */
+    public function setMessageFactory($messageFactory)
+    {
+        $this->messageFactory = $messageFactory;
 
         return $this;
     }

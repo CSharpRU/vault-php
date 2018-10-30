@@ -15,6 +15,8 @@ This is a PHP client for Vault - a tool for managing secrets.
 Quick start
 -----------
 
+Please read `how to setup HTTP transport <http://docs.php-http.org/en/latest/httplug/users.html>`_ before start -
+
 .. code-block:: php
 
     <?php
@@ -23,13 +25,10 @@ Quick start
     use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use VaultTransports\Guzzle5Transport;
-    use VaultTransports\Guzzle6Transport;
+    use GuzzleHttp\Psr7\Uri;
 
     // Creating the client
-    $client = new Client(new Guzzle5Transport()); // Using Guzzle5 Transport
-    $client = new Client(new Guzzle6Transport()); // Using Guzzle6 Transport
-    $client = new Client(new Guzzle5Transport(['base_url' => 'http://10.10.3.39:8200'])); // Passing a custom url
+    $client = new Client(new Uri('http://127.0.0.1:8200')); // Using php-http/guzzle6-adapter and guzzlehttp/psr7
 
     // Authenticating using userpass auth backend.
 
@@ -60,10 +59,10 @@ Fetching a secret
 
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use VaultTransports\Guzzle6Transport;
+    use GuzzleHttp\Psr7\Uri;
 
     // Creating the client
-    $client = new Client(new Guzzle6Transport()); //Using Guzzle6 Transport
+    $client = new Client(new Uri('http://127.0.0.1:8200')); // Using php-http/guzzle6-adapter and guzzlehttp/psr7
 
     // Authenticating using token auth backend.
     // Request exception could appear here.

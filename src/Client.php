@@ -4,7 +4,6 @@ namespace Vault;
 
 use Cache\Adapter\Common\CacheItem;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Vault\AuthenticationStrategies\AuthenticationStrategy;
 use Vault\Exceptions\ClientException;
@@ -41,11 +40,7 @@ class Client extends BaseClient
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
     public function read($path)
     {
@@ -74,15 +69,11 @@ class Client extends BaseClient
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
     public function write($path, array $data = [])
     {
-        return $this->post($this->buildPath($path), ['body' => json_encode($data)]);
+        return $this->post($this->buildPath($path), json_encode($data));
     }
 
     /**
@@ -90,11 +81,7 @@ class Client extends BaseClient
      *
      * @return Response
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Http\Client\Exception
      */
     public function revoke($path)
     {
@@ -149,9 +136,9 @@ class Client extends BaseClient
      * @throws \Psr\Cache\InvalidArgumentException
      * @throws \Vault\Exceptions\DependencyException
      */
-    public function send(RequestInterface $request, array $options = [])
+    public function send($method, $path, $body = null)
     {
-        $response = parent::send($request, $options);
+        $response = parent::send($method, $path, $body);
 
         // re-authenticate if 403 and token is expired
         if (
@@ -185,13 +172,8 @@ class Client extends BaseClient
     /**
      * @return bool
      *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\DependencyException
+     * @throws \Http\Client\Exception
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
      */
     public function authenticate()
     {

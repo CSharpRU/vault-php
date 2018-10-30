@@ -2,11 +2,11 @@
 
 use Cache\Adapter\Common\CacheItem;
 use Cache\Adapter\PHPArray\ArrayCachePool;
+use GuzzleHttp\Psr7\Uri;
 use Psr\Log\NullLogger;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
 use Vault\CachedClient;
 use Vault\ResponseModels\Response;
-use VaultTransports\Guzzle6Transport;
 
 class CachedClientTest extends \Codeception\Test\Unit
 {
@@ -31,10 +31,12 @@ class CachedClientTest extends \Codeception\Test\Unit
 
     /**
      * @return CachedClient
+     * @throws \Http\Client\Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function getAuthenticatedClient()
     {
-        $client = (new CachedClient(new Guzzle6Transport()))
+        $client = (new CachedClient(new Uri('http://127.0.0.1:8200')))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setLogger(new NullLogger());
 

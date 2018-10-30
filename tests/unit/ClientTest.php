@@ -3,8 +3,8 @@
 use Cache\Adapter\Common\CacheItem;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use Codeception\Util\Stub;
-use GuzzleHttp\Exception\TransferException;
-use Psr\Http\Message\RequestInterface;
+use GuzzleHttp\Psr7\Uri;
+use Http\Client\HttpClient;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\NullLogger;
@@ -15,8 +15,6 @@ use Vault\Exceptions\DependencyException;
 use Vault\Exceptions\ServerException;
 use Vault\Models\Token;
 use Vault\ResponseModels\Auth;
-use Vault\Transports\Transport;
-use VaultTransports\Guzzle6Transport;
 
 class ClientTest extends \Codeception\Test\Unit
 {
@@ -32,10 +30,12 @@ class ClientTest extends \Codeception\Test\Unit
 
     /**
      * @return Client
+     * @throws \Http\Client\Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function getAuthenticatedClient()
     {
-        $client = (new Client(new Guzzle6Transport()))
+        $client = (new Client(new Uri('http://127.0.0.1:8200')))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setLogger(new NullLogger());
 
@@ -75,7 +75,7 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $cache = new ArrayCachePool();
 
-        $client = (new Client(new Guzzle6Transport()))
+        $client = (new Client(new Uri('http://127.0.0.1:8200')))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setCache($cache);
 
@@ -86,7 +86,7 @@ class ClientTest extends \Codeception\Test\Unit
         $this->assertNotEmpty($realToken);
 
         // create new client with cache
-        $client = (new Client(new Guzzle6Transport()))->setCache($cache);
+        $client = (new Client(new Uri('http://127.0.0.1:8200')))->setCache($cache);
 
         $this->assertTrue($client->authenticate());
 
@@ -100,33 +100,14 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $this->expectException(DependencyException::class);
 
-        (new Client(new Guzzle6Transport()))->authenticate();
-    }
-
-    public function testTransportProblems()
-    {
-        $this->expectException(ServerException::class);
-
-        $transport = Stub::makeEmpty(Transport::class, [
-            'createRequest' => function () {
-                return Stub::makeEmpty(RequestInterface::class, []);
-            },
-            'send' => function () {
-                throw new TransferException();
-            },
-        ]);
-
-        (new Client($transport))->get('');
+        (new Client(new Uri('http://127.0.0.1:8200')))->authenticate();
     }
 
     public function testServerProblems()
     {
         try {
-            $transport = Stub::makeEmpty(Transport::class, [
-                'createRequest' => function () {
-                    return Stub::makeEmpty(RequestInterface::class, []);
-                },
-                'send' => function () {
+            $httpClient = Stub::makeEmpty(HttpClient::class, [
+                'sendRequest' => function () {
                     return Stub::makeEmpty(ResponseInterface::class, [
                         'getStatusCode' => function () {
                             return 500;
@@ -148,7 +129,7 @@ class ClientTest extends \Codeception\Test\Unit
                 },
             ]);
 
-            (new Client($transport))->get('');
+            (new Client(new Uri('http://127.0.0.1:8200'), $httpClient))->get('');
         } catch (Exception $e) {
             $this->assertInstanceOf(ServerException::class, $e);
             $this->assertInstanceOf(ResponseInterface::class, $e->getResponse());
@@ -159,7 +140,7 @@ class ClientTest extends \Codeception\Test\Unit
     {
         $cache = new ArrayCachePool();
 
-        $client = (new Client(new Guzzle6Transport()))
+        $client = (new Client(new Uri('http://127.0.0.1:8200')))
             ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
             ->setCache($cache)
             ->setToken(new Token([
@@ -173,7 +154,7 @@ class ClientTest extends \Codeception\Test\Unit
         $this->assertNotEmpty($realToken);
 
         // create new client with cache
-        $client = (new Client(new Guzzle6Transport()))->setCache($cache);
+        $client = (new Client(new Uri('http://127.0.0.1:8200')))->setCache($cache);
 
         /** @var CacheItem $token */
         $tokenCacheItem = $cache->getItem(Client::TOKEN_CACHE_KEY);

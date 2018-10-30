@@ -1,9 +1,9 @@
 <?php
 
+use GuzzleHttp\Psr7\Uri;
 use Psr\Log\NullLogger;
 use Vault\AuthenticationStrategies\AppRoleAuthenticationStrategy;
 use Vault\Client;
-use VaultTransports\Guzzle6Transport;
 
 class AppRoleAuthenticationStrategyTest extends \Codeception\Test\Unit
 {
@@ -14,7 +14,7 @@ class AppRoleAuthenticationStrategyTest extends \Codeception\Test\Unit
 
     public function testCanAuthenticate()
     {
-        $client = (new Client(new Guzzle6Transport()))
+        $client = (new Client(new Uri('http://127.0.0.1:8200')))
             ->setAuthenticationStrategy(
                 new AppRoleAuthenticationStrategy(
                     'db02de05-fa39-4855-059b-67221c5c2f63',

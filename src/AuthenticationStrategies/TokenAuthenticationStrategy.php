@@ -30,12 +30,6 @@ class TokenAuthenticationStrategy extends AbstractAuthenticationStrategy
      * Returns auth for further interactions with Vault.
      *
      * @return Auth
-     * @throws \Vault\Exceptions\TransportException
-     *
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
      */
     public function authenticate()
     {
