@@ -53,7 +53,7 @@ class AppRoleAuthenticationStrategy extends AbstractAuthenticationStrategy
     public function authenticate()
     {
         $response = $this->client->write(
-            '/auth/'.$this->appRoleName.'/login',
+            '/auth/' . $this->appRoleName . '/login',
             [
                 'role_id' => $this->roleId,
                 'secret_id' => $this->secretId,
