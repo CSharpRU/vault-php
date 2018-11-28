@@ -67,6 +67,7 @@ class Client extends BaseClient
      * @param string $path
      *
      * @return Response
+     * @throws \Http\Client\Exception
      */
     public function keys($path)
     {
