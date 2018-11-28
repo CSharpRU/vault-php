@@ -51,6 +51,11 @@ class Client extends BaseClient
     {
         return $this->get($this->buildPath($path));
     }
+    
+    public function keys($path)
+    {
+        return $this->list($this->buildPath($path));
+    }
 
     /**
      * @param string $path

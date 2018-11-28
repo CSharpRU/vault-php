@@ -76,6 +76,11 @@ abstract class BaseClient implements LoggerAwareInterface
     {
         return $this->responseBuilder->build($this->send(new Request('HEAD', $url), $options));
     }
+    
+    public function list($url = null, array $options = [])
+    {
+        return $this->responseBuilder->build($this->send(new Request('LIST', $url), $options));
+    }
 
     /**
      * @param RequestInterface $request
