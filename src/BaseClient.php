@@ -150,12 +150,40 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
+     * @throws \Http\Client\Exception
+     */
+    public function list($path = null)
+    {
+        return $this->responseBuilder->build($this->send('LIST', $path));
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return Response
      *
      * @throws \Http\Client\Exception
      */
     public function get($path = null)
     {
         return $this->responseBuilder->build($this->send('GET', $path));
+    }
+
+    /**
+     * @param Request $request
+     * @param array   $options
+     *
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function customRequest(Request $request, $options = [])
+    {
+        return $this->responseBuilder->build($this->send($request, $options));
     }
 
     /**

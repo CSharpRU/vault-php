@@ -65,6 +65,16 @@ class Client extends BaseClient
 
     /**
      * @param string $path
+     *
+     * @return Response
+     */
+    public function keys($path)
+    {
+        return $this->list($this->buildPath($path));
+    }
+
+    /**
+     * @param string $path
      * @param array  $data
      *
      * @return Response
