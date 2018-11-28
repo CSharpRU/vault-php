@@ -146,6 +146,23 @@ abstract class BaseClient implements LoggerAwareInterface
     }
 
     /**
+     * @param Request $request
+     * @param array  $options
+     *
+     * @return Response
+     *
+     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\ServerException
+     * @throws \Vault\Exceptions\ClientException
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function customRequest(Request $request, $options = [])
+    {
+        return $this->responseBuilder->build($this->send($request, $options));
+    }
+
+    /**
      * @param string $url
      * @param array  $options
      *
