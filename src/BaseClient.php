@@ -76,11 +76,6 @@ abstract class BaseClient implements LoggerAwareInterface
     {
         return $this->responseBuilder->build($this->send(new Request('HEAD', $url), $options));
     }
-    
-    public function list($url = null, array $options = [])
-    {
-        return $this->responseBuilder->build($this->send(new Request('LIST', $url), $options));
-    }
 
     /**
      * @param RequestInterface $request
@@ -138,6 +133,17 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param array  $options
      *
      * @return Response
+     */
+    public function list($url = null, array $options = [])
+    {
+        return $this->responseBuilder->build($this->send(new Request('LIST', $url), $options));
+    }
+
+    /**
+     * @param string $url
+     * @param array  $options
+     *
+     * @return Response
      *
      * @throws \Vault\Exceptions\TransportException
      * @throws \Vault\Exceptions\ServerException
@@ -152,7 +158,7 @@ abstract class BaseClient implements LoggerAwareInterface
 
     /**
      * @param Request $request
-     * @param array  $options
+     * @param array   $options
      *
      * @return Response
      *

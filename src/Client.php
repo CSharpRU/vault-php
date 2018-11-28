@@ -51,11 +51,6 @@ class Client extends BaseClient
     {
         return $this->get($this->buildPath($path));
     }
-    
-    public function keys($path)
-    {
-        return $this->list($this->buildPath($path));
-    }
 
     /**
      * @param string $path
@@ -71,6 +66,16 @@ class Client extends BaseClient
         }
 
         return sprintf('/%s%s', $this->version, $path);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return Response
+     */
+    public function keys($path)
+    {
+        return $this->list($this->buildPath($path));
     }
 
     /**

@@ -24,19 +24,20 @@ class AppRoleAuthenticationStrategy extends AbstractAuthenticationStrategy
     /**
      * @var string
      */
-    protected $appRoleName;
+    protected $name;
 
     /**
      * AppRoleAuthenticationStrategy constructor.
      *
      * @param string $roleId
      * @param string $secretId
+     * @param string $name
      */
-    public function __construct($roleId, $secretId, $appRoleName = 'approle')
+    public function __construct($roleId, $secretId, $name = 'approle')
     {
         $this->roleId = $roleId;
         $this->secretId = $secretId;
-        $this->appRoleName = $appRoleName;
+        $this->name = $name;
     }
 
     /**
@@ -53,7 +54,7 @@ class AppRoleAuthenticationStrategy extends AbstractAuthenticationStrategy
     public function authenticate()
     {
         $response = $this->client->write(
-            '/auth/' . $this->appRoleName . '/login',
+            '/auth/' . $this->name . '/login',
             [
                 'role_id' => $this->roleId,
                 'secret_id' => $this->secretId,

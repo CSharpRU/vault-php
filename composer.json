@@ -1,5 +1,5 @@
 {
-    "name": "samktulho/vault-php",
+    "name": "csharpru/vault-php",
     "description": "Best Vault client for PHP that you can find",
     "type": "library",
     "license": "MIT",
@@ -13,6 +13,7 @@
         "psr-4": {"Vault\\": "src/"}
     },
     "require": {
+        "php": "^7.0",
         "psr/cache": "^1.0",
         "psr/log": "^1.0",
         "cache/cache": "^0.4.0",
