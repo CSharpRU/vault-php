@@ -44,9 +44,9 @@ class AppRoleAuthenticationStrategy extends AbstractAuthenticationStrategy
      * Returns auth for further interactions with Vault.
      *
      * @return Auth
-     * @throws \Http\Client\Exception
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function authenticate()
+    public function authenticate(): Auth
     {
         $response = $this->client->write(
             '/auth/' . $this->name . '/login',

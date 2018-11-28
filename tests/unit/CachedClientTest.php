@@ -2,11 +2,12 @@
 
 use Cache\Adapter\Common\CacheItem;
 use Cache\Adapter\PHPArray\ArrayCachePool;
-use GuzzleHttp\Psr7\Uri;
-use Psr\Log\NullLogger;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
 use Vault\CachedClient;
 use Vault\ResponseModels\Response;
+use Zend\Diactoros\RequestFactory;
+use Zend\Diactoros\StreamFactory;
+use Zend\Diactoros\Uri;
 
 class CachedClientTest extends \Codeception\Test\Unit
 {
@@ -15,7 +16,12 @@ class CachedClientTest extends \Codeception\Test\Unit
      */
     protected $tester;
 
-    public function testReadCache()
+    /**
+     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws \Vault\Exceptions\RuntimeException
+     */
+    public function testReadCache(): void
     {
         $client = $this->getAuthenticatedClient()->enableReadCache()->setCache(new ArrayCachePool());
 
@@ -31,14 +37,20 @@ class CachedClientTest extends \Codeception\Test\Unit
 
     /**
      * @return CachedClient
-     * @throws \Http\Client\Exception
      * @throws \Psr\Cache\InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws \Vault\Exceptions\RuntimeException
      */
-    private function getAuthenticatedClient()
+    private function getAuthenticatedClient(): CachedClient
     {
-        $client = (new CachedClient(new Uri('http://127.0.0.1:8200')))
-            ->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'))
-            ->setLogger(new NullLogger());
+        $client = new CachedClient(
+            new Uri('http://127.0.0.1:8200'),
+            new \AlexTartan\GuzzlePsr18Adapter\Client(),
+            new RequestFactory(),
+            new StreamFactory()
+        );
+
+        $client->setAuthenticationStrategy(new UserPassAuthenticationStrategy('test', 'test'));
 
         $this->assertEquals($client->getAuthenticationStrategy()->getClient(), $client);
         $this->assertTrue($client->authenticate());
@@ -49,7 +61,12 @@ class CachedClientTest extends \Codeception\Test\Unit
         return $client;
     }
 
-    public function testReadCacheKeyAlreadyInCache()
+    /**
+     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws \Vault\Exceptions\RuntimeException
+     */
+    public function testReadCacheKeyAlreadyInCache(): void
     {
         $client = $this->getAuthenticatedClient()->enableReadCache()->setCache(new ArrayCachePool());
         $key = CachedClient::READ_CACHE_KEY . '_secret_test_2';

@@ -37,9 +37,9 @@ class UserPassAuthenticationStrategy extends AbstractAuthenticationStrategy
      * Returns auth for further interactions with Vault.
      *
      * @return Auth
-     * @throws \Http\Client\Exception
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function authenticate()
+    public function authenticate(): Auth
     {
         $response = $this->client->write(
             sprintf('/auth/userpass/login/%s', $this->username),

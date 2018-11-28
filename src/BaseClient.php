@@ -2,18 +2,18 @@
 
 namespace Vault;
 
-use Http\Client\HttpClient;
-use Http\Discovery\HttpClientDiscovery;
-use Http\Discovery\MessageFactoryDiscovery;
-use Http\Message\MessageFactory;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Vault\Builders\ResponseBuilder;
-use Vault\Exceptions\ServerException;
+use Vault\Exceptions\RequestException;
 use Vault\Models\Token;
 use Vault\ResponseModels\Response;
 
@@ -24,7 +24,7 @@ use Vault\ResponseModels\Response;
  */
 abstract class BaseClient implements LoggerAwareInterface
 {
-    const VERSION_1 = 'v1';
+    public const VERSION_1 = 'v1';
 
     use LoggerAwareTrait;
 
@@ -44,14 +44,19 @@ abstract class BaseClient implements LoggerAwareInterface
     protected $baseUri;
 
     /**
-     * @var HttpClient
+     * @var ClientInterface
      */
-    protected $httpClient;
+    protected $client;
 
     /**
-     * @var MessageFactory
+     * @var RequestFactoryInterface
      */
-    protected $messageFactory;
+    protected $requestFactory;
+
+    /**
+     * @var StreamFactoryInterface
+     */
+    protected $streamFactory;
 
     /**
      * @var ResponseBuilder
@@ -61,18 +66,23 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * Client constructor.
      *
-     * @param UriInterface         $baseUri
-     * @param HttpClient|null      $httpClient
-     * @param LoggerInterface|null $logger
+     * @param UriInterface            $baseUri
+     * @param ClientInterface         $client
+     * @param RequestFactoryInterface $requestFactory
+     * @param StreamFactoryInterface  $streamFactory
+     * @param LoggerInterface|null    $logger
      */
     public function __construct(
         UriInterface $baseUri,
-        HttpClient $httpClient = null,
+        ClientInterface $client,
+        RequestFactoryInterface $requestFactory,
+        StreamFactoryInterface $streamFactory,
         LoggerInterface $logger = null
     ) {
         $this->baseUri = $baseUri;
-        $this->httpClient = $httpClient ?: HttpClientDiscovery::find();
-        $this->messageFactory = MessageFactoryDiscovery::find();
+        $this->client = $client;
+        $this->requestFactory = $requestFactory;
+        $this->streamFactory = $streamFactory;
         $this->logger = $logger ?: new NullLogger();
         $this->responseBuilder = new ResponseBuilder();
     }
@@ -81,10 +91,10 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     *
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function head($path)
+    public function head(string $path): Response
     {
         return $this->responseBuilder->build($this->send('HEAD', $path));
     }
@@ -92,13 +102,13 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * @param string $method
      * @param string $path
-     * @param mixed  $body
+     * @param string $body
      *
      * @return ResponseInterface
-     *
-     * @throws \Http\Client\Exception
+     * @throws \Vault\Exceptions\RequestException
+     * @throws \InvalidArgumentException
      */
-    public function send($method, $path, $body = null)
+    public function send(string $method, string $path, string $body = ''): ResponseInterface
     {
         $headers = [
             'User-Agent' => 'VaultPHP/1.0.0',
@@ -109,23 +119,24 @@ abstract class BaseClient implements LoggerAwareInterface
             $headers['X-Vault-Token'] = $this->token->getAuth()->getClientToken();
         }
 
-        $message = $this->messageFactory->createRequest(
-            strtoupper($method),
-            $this->baseUri->withPath($path),
-            $headers,
-            $body
-        );
+        $request = $this->requestFactory->createRequest(strtoupper($method), $this->baseUri->withPath($path));
+
+        foreach ($headers as $name => $value) {
+            $request = $request->withHeader($name, $value);
+        }
+
+        $request = $request->withBody($this->streamFactory->createStream($body));
 
         $this->logger->debug('Request.', [
-            'method' => $message->getMethod(),
-            'uri' => $message->getUri(),
-            'headers' => $message->getHeaders(),
-            'body' => $message->getBody()->getContents(),
+            'method' => $method,
+            'uri' => $request->getUri(),
+            'headers' => $headers,
+            'body' => $body,
         ]);
 
         try {
-            $response = $this->httpClient->sendRequest($message);
-        } catch (\Exception $e) {
+            $response = $this->client->sendRequest($request);
+        } catch (ClientExceptionInterface $e) {
             $this->logger->error('Something went wrong when calling Vault.', [
                 'code' => $e->getCode(),
                 'message' => $e->getMessage(),
@@ -133,7 +144,7 @@ abstract class BaseClient implements LoggerAwareInterface
 
             $this->logger->debug('Trace.', ['exception' => $e]);
 
-            throw new ServerException(sprintf('Something went wrong when calling Vault (%s).', $e->getMessage()));
+            throw new RequestException($e->getMessage(), $e->getCode(), $e, $request);
         }
 
         $this->logger->debug('Response.', [
@@ -150,9 +161,10 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function list($path = null)
+    public function list(string $path = ''): Response
     {
         return $this->responseBuilder->build($this->send('LIST', $path));
     }
@@ -161,53 +173,36 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     *
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function get($path = null)
+    public function get(string $path = ''): Response
     {
         return $this->responseBuilder->build($this->send('GET', $path));
     }
 
     /**
-     * @param Request $request
-     * @param array   $options
-     *
-     * @return Response
-     *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
-     */
-    public function customRequest(Request $request, $options = [])
-    {
-        return $this->responseBuilder->build($this->send($request, $options));
-    }
-
-    /**
      * @param string $path
-     * @param mixed  $body
+     * @param string $body
      *
      * @return Response
-     *
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function put($path, $body = null)
+    public function put(string $path, string $body = ''): Response
     {
         return $this->responseBuilder->build($this->send('PUT', $path, $body));
     }
 
     /**
      * @param string $path
-     * @param mixed  $body
+     * @param string $body
      *
      * @return Response
-     *
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function patch($path, $body = null)
+    public function patch(string $path, string $body = ''): Response
     {
         return $this->responseBuilder->build($this->send('PATCH', $path, $body));
     }
@@ -216,23 +211,23 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     *
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function options($path)
+    public function options(string $path): Response
     {
         return $this->responseBuilder->build($this->send('OPTIONS', $path));
     }
 
     /**
      * @param string $path
-     * @param mixed  $body
+     * @param string $body
      *
      * @return Response
-     *
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function post($path, $body = null)
+    public function post(string $path, string $body = ''): Response
     {
         return $this->responseBuilder->build($this->send('POST', $path, $body));
     }
@@ -241,10 +236,10 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     *
-     * @throws \Http\Client\Exception
+     * @throws \InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
-    public function delete($path)
+    public function delete(string $path): Response
     {
         return $this->responseBuilder->build($this->send('DELETE', $path));
     }
@@ -252,7 +247,7 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         return $this->version;
     }
@@ -262,7 +257,7 @@ abstract class BaseClient implements LoggerAwareInterface
      *
      * @return $this
      */
-    public function setVersion($version)
+    public function setVersion(string $version)
     {
         $this->version = $version;
 
@@ -272,7 +267,7 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * @return Token
      */
-    public function getToken()
+    public function getToken(): Token
     {
         return $this->token;
     }
@@ -292,7 +287,7 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * @return UriInterface
      */
-    public function getBaseUri()
+    public function getBaseUri(): UriInterface
     {
         return $this->baseUri;
     }
@@ -302,7 +297,7 @@ abstract class BaseClient implements LoggerAwareInterface
      *
      * @return $this
      */
-    public function setBaseUri($baseUri)
+    public function setBaseUri(UriInterface $baseUri)
     {
         $this->baseUri = $baseUri;
 
@@ -310,41 +305,61 @@ abstract class BaseClient implements LoggerAwareInterface
     }
 
     /**
-     * @return HttpClient
+     * @return ClientInterface
      */
-    public function getHttpClient()
+    public function getClient(): ClientInterface
     {
-        return $this->httpClient;
+        return $this->client;
     }
 
     /**
-     * @param HttpClient $httpClient
+     * @param ClientInterface $client
      *
      * @return $this
      */
-    public function setHttpClient($httpClient)
+    public function setClient(ClientInterface $client)
     {
-        $this->httpClient = $httpClient;
+        $this->client = $client;
 
         return $this;
     }
 
     /**
-     * @return MessageFactory
+     * @return RequestFactoryInterface
      */
-    public function getMessageFactory()
+    public function getRequestFactory(): RequestFactoryInterface
     {
-        return $this->messageFactory;
+        return $this->requestFactory;
     }
 
     /**
-     * @param MessageFactory $messageFactory
+     * @param RequestFactoryInterface $requestFactory
      *
      * @return $this
      */
-    public function setMessageFactory($messageFactory)
+    public function setRequestFactory(RequestFactoryInterface $requestFactory)
     {
-        $this->messageFactory = $messageFactory;
+        $this->requestFactory = $requestFactory;
+
+        return $this;
+    }
+
+    /**
+     * @return StreamFactoryInterface
+     */
+    public function getStreamFactory(): StreamFactoryInterface
+    {
+        return $this->streamFactory;
+    }
+
+    /**
+     * @param StreamFactoryInterface $streamFactory
+     *
+     * @return $this
+     */
+    public function setStreamFactory($streamFactory)
+    {
+        $this->streamFactory = $streamFactory;
 
         return $this;
     }
@@ -366,7 +381,7 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * @return ResponseBuilder
      */
-    public function getResponseBuilder()
+    public function getResponseBuilder(): ResponseBuilder
     {
         return $this->responseBuilder;
     }

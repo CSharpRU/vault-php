@@ -4,6 +4,7 @@
 namespace Vault;
 
 use Cache\Adapter\Common\CacheItem;
+use Vault\ResponseModels\Response;
 
 class CachedClient extends Client
 {
@@ -24,7 +25,7 @@ class CachedClient extends Client
      *
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function read($path)
+    public function read($path): Response
     {
         if (!$this->readCacheEnabled) {
             return parent::read($path);
@@ -60,7 +61,7 @@ class CachedClient extends Client
     /**
      * @return bool
      */
-    public function isReadCacheEnabled()
+    public function isReadCacheEnabled(): bool
     {
         return $this->readCacheEnabled;
     }
@@ -88,7 +89,7 @@ class CachedClient extends Client
     /**
      * @return int
      */
-    public function getReadCacheTtl()
+    public function getReadCacheTtl(): int
     {
         return $this->readCacheTtl;
     }
@@ -98,7 +99,7 @@ class CachedClient extends Client
      *
      * @return $this
      */
-    public function setReadCacheTtl($readCacheTtl)
+    public function setReadCacheTtl(int $readCacheTtl)
     {
         $this->readCacheTtl = $readCacheTtl;
 

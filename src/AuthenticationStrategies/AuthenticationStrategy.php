@@ -17,12 +17,12 @@ interface AuthenticationStrategy
      *
      * @return Auth
      */
-    public function authenticate();
+    public function authenticate(): Auth;
 
     /**
      * @return Client
      */
-    public function getClient();
+    public function getClient(): Client;
 
     /**
      * @param Client $client

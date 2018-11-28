@@ -15,8 +15,6 @@ This is a PHP client for Vault - a tool for managing secrets.
 Quick start
 -----------
 
-Please read `how to setup HTTP transport <http://docs.php-http.org/en/latest/httplug/users.html>`_ before start -
-
 .. code-block:: php
 
     <?php
@@ -25,10 +23,17 @@ Please read `how to setup HTTP transport <http://docs.php-http.org/en/latest/htt
     use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use GuzzleHttp\Psr7\Uri;
+    use Zend\Diactoros\RequestFactory;
+    use Zend\Diactoros\StreamFactory;
+    use Zend\Diactoros\Uri;
 
     // Creating the client
-    $client = new Client(new Uri('http://127.0.0.1:8200')); // Using php-http/guzzle6-adapter and guzzlehttp/psr7
+    $client = new Client(
+        new Uri('http://127.0.0.1:8200'),
+        new \AlexTartan\GuzzlePsr18Adapter\Client(),
+        new RequestFactory(),
+        new StreamFactory()
+    ); // Using alextartan/guzzle-psr18-adapter and zendframework/zend-diactoros
 
     // Authenticating using userpass auth backend.
 
@@ -59,10 +64,17 @@ Fetching a secret
 
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use GuzzleHttp\Psr7\Uri;
+    use Zend\Diactoros\RequestFactory;
+    use Zend\Diactoros\StreamFactory;
+    use Zend\Diactoros\Uri;
 
     // Creating the client
-    $client = new Client(new Uri('http://127.0.0.1:8200')); // Using php-http/guzzle6-adapter and guzzlehttp/psr7
+    $client = new Client(
+        new Uri('http://127.0.0.1:8200'),
+        new \AlexTartan\GuzzlePsr18Adapter\Client(),
+        new RequestFactory(),
+        new StreamFactory()
+    ); // Using alextartan/guzzle-psr18-adapter and zendframework/zend-diactoros
 
     // Authenticating using token auth backend.
     // Request exception could appear here.

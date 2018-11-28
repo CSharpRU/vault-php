@@ -31,7 +31,7 @@ class TokenAuthenticationStrategy extends AbstractAuthenticationStrategy
      *
      * @return Auth
      */
-    public function authenticate()
+    public function authenticate(): Auth
     {
         return new Auth(['clientToken' => $this->token]);
     }
