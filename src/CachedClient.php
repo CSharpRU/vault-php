@@ -25,7 +25,7 @@ class CachedClient extends Client
      *
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function read($path): Response
+    public function read(string $path): Response
     {
         if (!$this->readCacheEnabled) {
             return parent::read($path);
