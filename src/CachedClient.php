@@ -3,7 +3,7 @@
 
 namespace Vault;
 
-use Cache\Adapter\Common\CacheItem;
+use Psr\Cache\CacheItemInterface;
 
 class CachedClient extends Client
 {
@@ -46,7 +46,10 @@ class CachedClient extends Client
 
         $response = parent::read($path);
 
-        $item = (new CacheItem($key))->set($response)->expiresAfter($this->readCacheTtl);
+        /** @var CacheItemInterface $item */
+        $item = $this->cache->getItem($key);
+        $item->set($response);
+        $item->expiresAfter($this->readCacheTtl);
 
         $this->logger->debug('Saving read response in cache.', ['path' => $path, 'item' => $item]);
 
