@@ -2,7 +2,7 @@
 
 namespace Vault;
 
-use Cache\Adapter\Common\CacheItem;
+use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -310,9 +310,10 @@ class Client extends BaseClient
             throw new ClientException('Cannot save expired token into cache!');
         }
 
-        $authItem = (new CacheItem(self::TOKEN_CACHE_KEY))
-            ->set($this->token)
-            ->expiresAfter($this->token->getAuth()->getLeaseDuration());
+        /** @var CacheItemInterface $authItem */
+        $authItem = $this->cache->getItem(self::TOKEN_CACHE_KEY);
+        $authItem->set($this->token);
+        $authItem->expiresAfter($this->token->getAuth()->getLeaseDuration());
 
         $this->logger->debug('Token is saved into cache.');
 

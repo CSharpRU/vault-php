@@ -1,6 +1,6 @@
 <?php
 
-use Cache\Adapter\Common\CacheItem;
+use Psr\Cache\CacheItemInterface;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use Psr\Log\NullLogger;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
@@ -52,7 +52,11 @@ class CachedClientTest extends \Codeception\Test\Unit
         $client = $this->getAuthenticatedClient()->enableReadCache()->setCache(new ArrayCachePool());
         $key = CachedClient::READ_CACHE_KEY . '_secret_test_2';
 
-        $client->getCache()->save((new CacheItem($key))->set(new Response(['data' => ['value' => 'test']]))->expiresAfter(10));
+        /** @var CacheItemInterface $cacheItem */
+        $cacheItem = $client->getCache()->getItem($key);
+        $cacheItem->set(new Response(['data' => ['value' => 'test']]));
+        $cacheItem->expiresAfter(10);
+        $client->getCache()->save($cacheItem);
 
         $data = $client->read('/secret/test/2')->getData();
 
