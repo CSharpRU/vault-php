@@ -13,7 +13,7 @@
         "psr-4": {"Vault\\": "src/"}
     },
     "require": {
-        "php": "^7.1",
+        "php": "^7.2",
         "psr/cache": "^1.0",
         "psr/log": "^1.0",
         "cache/cache": "^0.4.0",
