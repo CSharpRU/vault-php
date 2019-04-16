@@ -1,6 +1,6 @@
 <?php
 
-use Cache\Adapter\Common\CacheItem;
+use Psr\Cache\CacheItemInterface;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use Codeception\Util\Stub;
 use Psr\Http\Client\ClientInterface;
@@ -245,7 +245,7 @@ class ClientTest extends \Codeception\Test\Unit
         // create new client with cache
         $client = $this->getClient()->setCache($cache);
 
-        /** @var CacheItem $token */
+        /** @var CacheItemInterface $token */
         $tokenCacheItem = $cache->getItem(Client::TOKEN_CACHE_KEY);
 
         $tokenAsArray = $tokenCacheItem->get()->toArray();
