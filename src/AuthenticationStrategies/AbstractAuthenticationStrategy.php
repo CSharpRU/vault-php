@@ -19,7 +19,7 @@ abstract class AbstractAuthenticationStrategy implements AuthenticationStrategy
     /**
      * @return Client
      */
-    public function getClient()
+    public function getClient(): Client
     {
         return $this->client;
     }

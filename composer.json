@@ -13,19 +13,20 @@
         "psr-4": {"Vault\\": "src/"}
     },
     "require": {
-        "php": "^7.0",
+        "php": "^7.2",
         "psr/cache": "^1.0",
         "psr/log": "^1.0",
         "cache/cache": "^0.4.0",
-        "guzzlehttp/psr7": "^1.4",
-        "guzzlehttp/promises": "^1.3",
         "doctrine/inflector": "~1.1",
-        "weew/helpers-array": "^1.3"
+        "weew/helpers-array": "^1.3",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0"
     },
     "require-dev": {
         "codeception/codeception": "^2.2",
-        "csharpru/vault-php-guzzle6-transport": "~2.0",
         "php-vcr/php-vcr": "^1.3",
-        "codacy/coverage": "^1.1"
+        "codacy/coverage": "^1.1",
+        "alextartan/guzzle-psr18-adapter": "^1.2",
+        "zendframework/zend-diactoros": "^2.0"
     }
 }

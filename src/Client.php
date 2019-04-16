@@ -2,14 +2,13 @@
 
 namespace Vault;
 
-use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Vault\AuthenticationStrategies\AuthenticationStrategy;
-use Vault\Exceptions\ClientException;
+use Vault\Exceptions\AuthenticationException;
 use Vault\Exceptions\DependencyException;
-use Vault\Exceptions\ServerException;
+use Vault\Exceptions\RequestException;
+use Vault\Exceptions\RuntimeException;
 use Vault\Helpers\ModelHelper;
 use Vault\Models\Token;
 use Vault\ResponseModels\Response;
@@ -40,14 +39,10 @@ class Client extends BaseClient
      * @param string $path
      *
      * @return Response
-     *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
      * @throws \InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function read($path)
+    public function read(string $path): Response
     {
         return $this->get($this->buildPath($path));
     }
@@ -57,7 +52,7 @@ class Client extends BaseClient
      *
      * @return string
      */
-    public function buildPath($path)
+    public function buildPath(string $path): string
     {
         if (!$this->version) {
             $this->logger->warning('API version is not set!');
@@ -72,8 +67,10 @@ class Client extends BaseClient
      * @param string $path
      *
      * @return Response
+     * @throws \InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function keys($path)
+    public function keys(string $path): Response
     {
         return $this->list($this->buildPath($path));
     }
@@ -83,30 +80,22 @@ class Client extends BaseClient
      * @param array  $data
      *
      * @return Response
-     *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
      * @throws \InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function write($path, array $data = [])
+    public function write(string $path, array $data = []): Response
     {
-        return $this->post($this->buildPath($path), ['body' => json_encode($data)]);
+        return $this->post($this->buildPath($path), json_encode($data));
     }
 
     /**
      * @param string $path
      *
      * @return Response
-     *
-     * @throws \Vault\Exceptions\TransportException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
      * @throws \InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function revoke($path)
+    public function revoke(string $path): Response
     {
         return $this->delete($this->buildPath($path));
     }
@@ -114,7 +103,7 @@ class Client extends BaseClient
     /**
      * @return CacheItemPoolInterface
      */
-    public function getCache()
+    public function getCache(): CacheItemPoolInterface
     {
         return $this->cache;
     }
@@ -124,7 +113,7 @@ class Client extends BaseClient
      *
      * @return $this
      */
-    public function setCache($cache)
+    public function setCache(CacheItemPoolInterface $cache): self
     {
         $this->cache = $cache;
 
@@ -134,7 +123,7 @@ class Client extends BaseClient
     /**
      * @return AuthenticationStrategy
      */
-    public function getAuthenticationStrategy()
+    public function getAuthenticationStrategy(): AuthenticationStrategy
     {
         return $this->authenticationStrategy;
     }
@@ -144,7 +133,7 @@ class Client extends BaseClient
      *
      * @return $this
      */
-    public function setAuthenticationStrategy(AuthenticationStrategy $authenticationStrategy)
+    public function setAuthenticationStrategy(AuthenticationStrategy $authenticationStrategy): self
     {
         $authenticationStrategy->setClient($this);
 
@@ -155,27 +144,42 @@ class Client extends BaseClient
 
     /**
      * @inheritdoc
-     *
-     * @throws \Psr\Cache\InvalidArgumentException
      * @throws \Vault\Exceptions\DependencyException
+     * @throws \Vault\Exceptions\AuthenticationException
+     * @throws \Vault\Exceptions\RuntimeException
+     * @throws \Exception
+     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function send(RequestInterface $request, array $options = [])
+    public function send(string $method, string $path, string $body = ''): ResponseInterface
     {
-        $response = parent::send($request, $options);
+        try {
+            return parent::send($method, $path, $body);
+        } /** @noinspection PhpRedundantCatchClauseInspection */ catch (RequestException $e) {
+            // re-authenticate if 403 and token is expired
+            if (
+                $this->token &&
+                $e->getCode() === 403 &&
+                $this->isTokenExpired($this->token)
+            ) {
+                try {
+                    if ($this->authenticate()) {
+                        return parent::send($method, $path, $body);
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->error('Cannot re-authenticate.', [
+                        'code' => $e->getCode(),
+                        'message' => $e->getMessage(),
+                    ]);
 
-        // re-authenticate if 403 and token is expired
-        if (
-            $this->token &&
-            $response->getStatusCode() === 403 &&
-            $this->isTokenExpired($this->token) &&
-            !$this->authenticate()
-        ) {
-            throw new ClientException('Cannot re-authenticate.');
+                    $this->logger->debug('Trace.', ['exception' => $e]);
+                }
+
+                throw new AuthenticationException('Cannot re-authenticate');
+            }
+
+            throw $e;
         }
-
-        $this->checkResponse($response);
-
-        return $response;
     }
 
     /**
@@ -183,7 +187,7 @@ class Client extends BaseClient
      *
      * @return bool
      */
-    protected function isTokenExpired($token)
+    protected function isTokenExpired(Token $token): bool
     {
         return !$token ||
             (
@@ -195,15 +199,13 @@ class Client extends BaseClient
     /**
      * @return bool
      *
-     * @throws \Vault\Exceptions\TransportException
+     * @throws \Vault\Exceptions\RuntimeException
      * @throws \Vault\Exceptions\DependencyException
+     * @throws \Exception
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Vault\Exceptions\ServerException
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \Psr\Http\Client\ClientExceptionInterface
      */
-    public function authenticate()
+    public function authenticate(): bool
     {
         if ($this->token = $this->getTokenFromCache()) {
             $this->logger->debug('Using token from cache.');
@@ -251,7 +253,7 @@ class Client extends BaseClient
      *
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    protected function getTokenFromCache()
+    protected function getTokenFromCache(): ?Token
     {
         if (!$this->cache || !$this->cache->hasItem(self::TOKEN_CACHE_KEY)) {
             return null;
@@ -278,7 +280,7 @@ class Client extends BaseClient
         return $token;
     }
 
-    private function writeTokenInfoToDebugLog()
+    private function writeTokenInfoToDebugLog(): void
     {
         if (!$this->token) {
             $this->logger->debug('Token is null, cannot write info to debug, potential error.');
@@ -298,22 +300,22 @@ class Client extends BaseClient
      * @TODO: move to separated class
      *
      * @return bool
-     * @throws \Vault\Exceptions\ClientException
+     * @throws \Exception
+     * @throws RuntimeException
      */
-    protected function putTokenIntoCache()
+    protected function putTokenIntoCache(): bool
     {
         if (!$this->cache) {
             return true; // just ignore
         }
 
         if ($this->isTokenExpired($this->token)) {
-            throw new ClientException('Cannot save expired token into cache!');
+            throw new RuntimeException('Cannot save expired token into cache!');
         }
 
-        /** @var CacheItemInterface $authItem */
         $authItem = $this->cache->getItem(self::TOKEN_CACHE_KEY);
-        $authItem->set($this->token);
-        $authItem->expiresAfter($this->token->getAuth()->getLeaseDuration());
+
+        $authItem->set($this->token)->expiresAfter($this->token->getAuth()->getLeaseDuration());
 
         $this->logger->debug('Token is saved into cache.');
 
@@ -321,35 +323,9 @@ class Client extends BaseClient
     }
 
     /**
-     * Returns true whenever request should be retried.
-     *
-     * @param ResponseInterface $response
-     *
-     * @throws \Vault\Exceptions\ClientException
-     * @throws \Vault\Exceptions\ServerException
-     */
-    protected function checkResponse(ResponseInterface $response)
-    {
-        if ($response->getStatusCode() >= 400) {
-            $message = sprintf(
-                "Something went wrong when calling Vault (%s - %s)\n%s.",
-                $response->getStatusCode(),
-                $response->getReasonPhrase(),
-                $response->getBody()->getContents()
-            );
-
-            if ($response->getStatusCode() >= 500) {
-                throw new ServerException($message, $response->getStatusCode(), $response);
-            }
-
-            throw new ClientException($message, $response->getStatusCode(), $response);
-        }
-    }
-
-    /**
      * @inheritdoc
-     *
-     * @throws \Vault\Exceptions\ClientException
+     * @throws \Exception
+     * @throws RuntimeException
      */
     public function setToken(Token $token)
     {
