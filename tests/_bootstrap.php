@@ -3,4 +3,6 @@
 // This is global bootstrap for autoloading
 
 // VCR cassette path
-\VCR\VCR::configure()->setCassettePath(__DIR__ . '/_data/vcr');
+use VCR\VCR;
+
+VCR::configure()->enableLibraryHooks(['curl'])->setCassettePath(__DIR__ . '/_data/vcr');

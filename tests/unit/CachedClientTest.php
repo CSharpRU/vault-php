@@ -1,23 +1,27 @@
 <?php
 
+use AlexTartan\GuzzlePsr18Adapter\Client;
 use Cache\Adapter\PHPArray\ArrayCachePool;
+use Codeception\Test\Unit;
+use Psr\Http\Client\ClientExceptionInterface;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
 use Vault\CachedClient;
 use Vault\ResponseModels\Response;
+use VCR\VCR;
 use Zend\Diactoros\RequestFactory;
 use Zend\Diactoros\StreamFactory;
 use Zend\Diactoros\Uri;
 
-class CachedClientTest extends \Codeception\Test\Unit
+class CachedClientTest extends Unit
 {
     /**
-     * @var \UnitTester
+     * @var UnitTester
      */
     protected $tester;
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws \Vault\Exceptions\RuntimeException
      */
     public function testReadCache(): void
@@ -37,14 +41,14 @@ class CachedClientTest extends \Codeception\Test\Unit
     /**
      * @return CachedClient
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws \Vault\Exceptions\RuntimeException
      */
     private function getAuthenticatedClient(): CachedClient
     {
         $client = new CachedClient(
             new Uri('http://127.0.0.1:8200'),
-            new \AlexTartan\GuzzlePsr18Adapter\Client(),
+            new Client(),
             new RequestFactory(),
             new StreamFactory()
         );
@@ -62,7 +66,7 @@ class CachedClientTest extends \Codeception\Test\Unit
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws \Vault\Exceptions\RuntimeException
      */
     public function testReadCacheKeyAlreadyInCache(): void
@@ -85,9 +89,9 @@ class CachedClientTest extends \Codeception\Test\Unit
 
     protected function setUp()
     {
-        \VCR\VCR::turnOn();
+        VCR::turnOn();
 
-        \VCR\VCR::insertCassette('unit-client');
+        VCR::insertCassette('unit-client');
 
         return parent::setUp();
     }
@@ -95,10 +99,10 @@ class CachedClientTest extends \Codeception\Test\Unit
     protected function tearDown()
     {
         // To stop recording requests, eject the cassette
-        \VCR\VCR::eject();
+        VCR::eject();
 
         // Turn off VCR to stop intercepting requests
-        \VCR\VCR::turnOff();
+        VCR::turnOff();
 
         parent::tearDown();
     }

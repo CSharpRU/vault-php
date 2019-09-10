@@ -13,11 +13,11 @@ class ArrayHelper
 {
     /**
      * @param object|array $object
-     * @param bool|true    $recursive
+     * @param bool|true $recursive
      *
      * @return array
      */
-    public static function toArray($object, $recursive = true)
+    public static function toArray($object, $recursive = true): array
     {
         $array = [];
 
@@ -39,9 +39,9 @@ class ArrayHelper
     }
 
     /**
-     * @param array  $array
+     * @param array $array
      * @param string $key
-     * @param mixed  $default
+     * @param mixed $default
      *
      * @return mixed
      */

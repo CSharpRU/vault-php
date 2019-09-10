@@ -13,11 +13,11 @@ class ModelHelper
 {
     /**
      * @param array $data
-     * @param bool  $recursive
+     * @param bool $recursive
      *
      * @return array
      */
-    public static function camelize(array $data, $recursive = true)
+    public static function camelize(array $data, $recursive = true): array
     {
         $return = [];
 

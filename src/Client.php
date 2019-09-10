@@ -2,7 +2,10 @@
 
 namespace Vault;
 
+use Exception;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Cache\InvalidArgumentException;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Vault\AuthenticationStrategies\AuthenticationStrategy;
 use Vault\Exceptions\AuthenticationException;
@@ -23,7 +26,7 @@ use Vault\ResponseModels\Response;
  */
 class Client extends BaseClient
 {
-    const TOKEN_CACHE_KEY = 'token';
+    public const TOKEN_CACHE_KEY = 'token';
 
     /**
      * @var CacheItemPoolInterface
@@ -40,7 +43,7 @@ class Client extends BaseClient
      *
      * @return Response
      * @throws \InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function read(string $path): Response
     {
@@ -68,7 +71,7 @@ class Client extends BaseClient
      *
      * @return Response
      * @throws \InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function keys(string $path): Response
     {
@@ -77,11 +80,11 @@ class Client extends BaseClient
 
     /**
      * @param string $path
-     * @param array  $data
+     * @param array $data
      *
      * @return Response
      * @throws \InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function write(string $path, array $data = []): Response
     {
@@ -93,7 +96,7 @@ class Client extends BaseClient
      *
      * @return Response
      * @throws \InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function revoke(string $path): Response
     {
@@ -144,12 +147,11 @@ class Client extends BaseClient
 
     /**
      * @inheritdoc
-     * @throws \Vault\Exceptions\DependencyException
-     * @throws \Vault\Exceptions\AuthenticationException
-     * @throws \Vault\Exceptions\RuntimeException
-     * @throws \Exception
-     * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws DependencyException
+     * @throws AuthenticationException
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
     public function send(string $method, string $path, string $body = ''): ResponseInterface
     {
@@ -166,7 +168,7 @@ class Client extends BaseClient
                     if ($this->authenticate()) {
                         return parent::send($method, $path, $body);
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->error('Cannot re-authenticate.', [
                         'code' => $e->getCode(),
                         'message' => $e->getMessage(),
@@ -199,11 +201,11 @@ class Client extends BaseClient
     /**
      * @return bool
      *
-     * @throws \Vault\Exceptions\RuntimeException
-     * @throws \Vault\Exceptions\DependencyException
-     * @throws \Exception
-     * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws RuntimeException
+     * @throws DependencyException
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
     public function authenticate(): bool
     {
@@ -251,7 +253,7 @@ class Client extends BaseClient
      *
      * @return Token|null
      *
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function getTokenFromCache(): ?Token
     {
@@ -300,8 +302,9 @@ class Client extends BaseClient
      * @TODO: move to separated class
      *
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      * @throws RuntimeException
+     * @throws InvalidArgumentException
      */
     protected function putTokenIntoCache(): bool
     {
@@ -324,8 +327,9 @@ class Client extends BaseClient
 
     /**
      * @inheritdoc
-     * @throws \Exception
+     * @throws Exception
      * @throws RuntimeException
+     * @throws InvalidArgumentException
      */
     public function setToken(Token $token)
     {

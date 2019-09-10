@@ -2,6 +2,7 @@
 
 namespace Vault;
 
+use InvalidArgumentException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -66,11 +67,11 @@ abstract class BaseClient implements LoggerAwareInterface
     /**
      * Client constructor.
      *
-     * @param UriInterface            $baseUri
-     * @param ClientInterface         $client
+     * @param UriInterface $baseUri
+     * @param ClientInterface $client
      * @param RequestFactoryInterface $requestFactory
-     * @param StreamFactoryInterface  $streamFactory
-     * @param LoggerInterface|null    $logger
+     * @param StreamFactoryInterface $streamFactory
+     * @param LoggerInterface|null $logger
      */
     public function __construct(
         UriInterface $baseUri,
@@ -91,7 +92,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function head(string $path): Response
@@ -105,8 +106,8 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $body
      *
      * @return ResponseInterface
-     * @throws \Vault\Exceptions\RequestException
-     * @throws \InvalidArgumentException
+     * @throws RequestException
+     * @throws InvalidArgumentException
      */
     public function send(string $method, string $path, string $body = ''): ResponseInterface
     {
@@ -161,7 +162,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function list(string $path = ''): Response
@@ -173,7 +174,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function get(string $path = ''): Response
@@ -186,7 +187,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $body
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function put(string $path, string $body = ''): Response
@@ -199,7 +200,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $body
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function patch(string $path, string $body = ''): Response
@@ -211,7 +212,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function options(string $path): Response
@@ -224,7 +225,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $body
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function post(string $path, string $body = ''): Response
@@ -236,7 +237,7 @@ abstract class BaseClient implements LoggerAwareInterface
      * @param string $path
      *
      * @return Response
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
     public function delete(string $path): Response

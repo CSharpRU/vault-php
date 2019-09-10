@@ -13,37 +13,37 @@ use Vault\ResponseModels\Auth;
 class Token extends BaseObject
 {
     /**
-     * @var Auth
+     * @var Auth|null
      */
     protected $auth;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $accessor;
 
     /**
-     * @var int
+     * @var int|null
      */
     protected $creationTime;
 
     /**
-     * @var int
+     * @var int|null
      */
     protected $creationTtl;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $displayName;
 
     /**
-     * @var int
+     * @var int|null
      */
     protected $explicitMaxTtl;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $id;
 
@@ -63,7 +63,7 @@ class Token extends BaseObject
     protected $orphan = false;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $path;
 
@@ -73,62 +73,62 @@ class Token extends BaseObject
     protected $policies = [];
 
     /**
-     * @var int
+     * @var int|null
      */
     protected $ttl;
 
     /**
-     * @return Auth
+     * @return Auth|null
      */
-    public function getAuth()
+    public function getAuth(): ?Auth
     {
         return $this->auth;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getAccessor()
+    public function getAccessor(): ?string
     {
         return $this->accessor;
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getCreationTime()
+    public function getCreationTime(): ?int
     {
         return $this->creationTime;
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getCreationTtl()
+    public function getCreationTtl(): ?int
     {
         return $this->creationTtl;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getDisplayName()
+    public function getDisplayName(): ?string
     {
         return $this->displayName;
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getExplicitMaxTtl()
+    public function getExplicitMaxTtl(): ?int
     {
         return $this->explicitMaxTtl;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getId()
+    public function getId(): ?string
     {
         return $this->id;
     }
@@ -136,7 +136,7 @@ class Token extends BaseObject
     /**
      * @return array
      */
-    public function getMeta()
+    public function getMeta(): array
     {
         return $this->meta;
     }
@@ -144,7 +144,7 @@ class Token extends BaseObject
     /**
      * @return int
      */
-    public function getNumUses()
+    public function getNumUses(): int
     {
         return $this->numUses;
     }
@@ -152,15 +152,15 @@ class Token extends BaseObject
     /**
      * @return bool
      */
-    public function isOrphan()
+    public function isOrphan(): bool
     {
         return $this->orphan;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getPath()
+    public function getPath(): ?string
     {
         return $this->path;
     }
@@ -168,15 +168,15 @@ class Token extends BaseObject
     /**
      * @return array
      */
-    public function getPolicies()
+    public function getPolicies(): array
     {
         return $this->policies;
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getTtl()
+    public function getTtl(): ?int
     {
         return $this->ttl;
     }

@@ -2,6 +2,7 @@
 
 namespace Vault\Exceptions;
 
+use Exception;
 use Psr\Http\Client\RequestExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Throwable;
@@ -11,7 +12,7 @@ use Throwable;
  *
  * @package Vault\Exceptions
  */
-class RequestException extends \Exception implements RequestExceptionInterface
+class RequestException extends Exception implements RequestExceptionInterface
 {
     /**
      * @var RequestInterface

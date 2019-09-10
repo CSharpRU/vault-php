@@ -1,21 +1,24 @@
 <?php
 
+use Codeception\Test\Unit;
+use Psr\Http\Client\ClientExceptionInterface;
 use Vault\AuthenticationStrategies\AppRoleAuthenticationStrategy;
 use Vault\Client;
+use VCR\VCR;
 use Zend\Diactoros\RequestFactory;
 use Zend\Diactoros\StreamFactory;
 use Zend\Diactoros\Uri;
 
-class AppRoleAuthenticationStrategyTest extends \Codeception\Test\Unit
+class AppRoleAuthenticationStrategyTest extends Unit
 {
     /**
-     * @var \UnitTester
+     * @var UnitTester
      */
     protected $tester;
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws \Vault\Exceptions\RuntimeException
      */
     public function testCanAuthenticate(): void
@@ -43,9 +46,9 @@ class AppRoleAuthenticationStrategyTest extends \Codeception\Test\Unit
 
     protected function setUp()
     {
-        \VCR\VCR::turnOn();
+        VCR::turnOn();
 
-        \VCR\VCR::insertCassette('authentication-strategies/app-role');
+        VCR::insertCassette('authentication-strategies/app-role');
 
         return parent::setUp();
     }
@@ -53,10 +56,10 @@ class AppRoleAuthenticationStrategyTest extends \Codeception\Test\Unit
     protected function tearDown()
     {
         // To stop recording requests, eject the cassette
-        \VCR\VCR::eject();
+        VCR::eject();
 
         // Turn off VCR to stop intercepting requests
-        \VCR\VCR::turnOff();
+        VCR::turnOff();
 
         parent::tearDown();
     }

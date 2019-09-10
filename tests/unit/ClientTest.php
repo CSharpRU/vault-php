@@ -1,7 +1,9 @@
 <?php
 
 use Cache\Adapter\PHPArray\ArrayCachePool;
+use Codeception\Test\Unit;
 use Codeception\Util\Stub;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
@@ -12,20 +14,21 @@ use Vault\Exceptions\RequestException;
 use Vault\Exceptions\RuntimeException;
 use Vault\Models\Token;
 use Vault\ResponseModels\Auth;
+use VCR\VCR;
 use Zend\Diactoros\RequestFactory;
 use Zend\Diactoros\StreamFactory;
 use Zend\Diactoros\Uri;
 
-class ClientTest extends \Codeception\Test\Unit
+class ClientTest extends Unit
 {
     /**
-     * @var \UnitTester
+     * @var UnitTester
      */
     protected $tester;
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws RuntimeException
      */
     public function testAuthenticationUserPass(): void
@@ -36,7 +39,7 @@ class ClientTest extends \Codeception\Test\Unit
     /**
      * @return Client
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws RuntimeException
      */
     private function getAuthenticatedClient(): Client
@@ -70,7 +73,7 @@ class ClientTest extends \Codeception\Test\Unit
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws RuntimeException
      */
     public function testWriteReadRevokeSecret(): void
@@ -88,7 +91,7 @@ class ClientTest extends \Codeception\Test\Unit
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws RuntimeException
      */
     public function testWritePermissionDeniedSecret(): void
@@ -103,7 +106,7 @@ class ClientTest extends \Codeception\Test\Unit
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws RuntimeException
      */
     public function testTokenCache(): void
@@ -133,7 +136,7 @@ class ClientTest extends \Codeception\Test\Unit
 
     /**
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws RuntimeException
      */
     public function testTryToAuthenticateWithoutStrategy(): void
@@ -144,7 +147,7 @@ class ClientTest extends \Codeception\Test\Unit
     }
 
     /**
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function testServerProblems(): void
     {
@@ -162,7 +165,7 @@ class ClientTest extends \Codeception\Test\Unit
     }
 
     /**
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      * @throws RuntimeException
      * @throws Exception
      */
@@ -194,7 +197,7 @@ class ClientTest extends \Codeception\Test\Unit
     }
 
     /**
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function testReAuthenticationFailure(): void
     {
@@ -222,7 +225,7 @@ class ClientTest extends \Codeception\Test\Unit
     /**
      * @throws RuntimeException
      * @throws \Psr\Cache\InvalidArgumentException
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function testTokenCacheInvalidate(): void
     {
@@ -264,9 +267,9 @@ class ClientTest extends \Codeception\Test\Unit
 
     protected function setUp()
     {
-        \VCR\VCR::turnOn();
+        VCR::turnOn();
 
-        \VCR\VCR::insertCassette('unit-client');
+        VCR::insertCassette('unit-client');
 
         return parent::setUp();
     }
@@ -274,10 +277,10 @@ class ClientTest extends \Codeception\Test\Unit
     protected function tearDown()
     {
         // To stop recording requests, eject the cassette
-        \VCR\VCR::eject();
+        VCR::eject();
 
         // Turn off VCR to stop intercepting requests
-        \VCR\VCR::turnOff();
+        VCR::turnOff();
 
         parent::tearDown();
     }

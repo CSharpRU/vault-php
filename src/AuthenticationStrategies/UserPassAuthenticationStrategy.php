@@ -2,6 +2,7 @@
 
 namespace Vault\AuthenticationStrategies;
 
+use Psr\Http\Client\ClientExceptionInterface;
 use Vault\ResponseModels\Auth;
 
 /**
@@ -37,7 +38,7 @@ class UserPassAuthenticationStrategy extends AbstractAuthenticationStrategy
      * Returns auth for further interactions with Vault.
      *
      * @return Auth
-     * @throws \Psr\Http\Client\ClientExceptionInterface
+     * @throws ClientExceptionInterface
      */
     public function authenticate(): Auth
     {
