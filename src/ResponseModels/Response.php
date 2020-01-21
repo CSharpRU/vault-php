@@ -15,40 +15,40 @@ class Response extends BaseObject
     use LeaseTrait;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $requestId;
 
     /**
-     * @var Auth
+     * @var Auth|null
      */
     protected $auth;
 
     /**
-     * @var array
+     * @var array|null
      */
     protected $data = [];
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getRequestId()
+    public function getRequestId(): ?string
     {
         return $this->requestId;
     }
 
     /**
-     * @return Auth
+     * @return Auth|null
      */
-    public function getAuth()
+    public function getAuth(): ?Auth
     {
         return $this->auth;
     }
 
     /**
-     * @return array
+     * @return array|null
      */
-    public function getData()
+    public function getData(): ?array
     {
         return $this->data;
     }

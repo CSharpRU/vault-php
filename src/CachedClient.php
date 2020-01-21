@@ -3,11 +3,17 @@
 
 namespace Vault;
 
-use Cache\Adapter\Common\CacheItem;
+use Psr\Cache\InvalidArgumentException;
+use Vault\ResponseModels\Response;
 
+/**
+ * Class CachedClient
+ *
+ * @package Vault
+ */
 class CachedClient extends Client
 {
-    const READ_CACHE_KEY = 'vault_client_read_cache';
+    public const READ_CACHE_KEY = 'vault_client_read_cache';
 
     /**
      * @var bool
@@ -22,9 +28,9 @@ class CachedClient extends Client
     /**
      * @inheritdoc
      *
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function read($path)
+    public function read(string $path): Response
     {
         if (!$this->readCacheEnabled) {
             return parent::read($path);
@@ -46,7 +52,9 @@ class CachedClient extends Client
 
         $response = parent::read($path);
 
-        $item = (new CacheItem($key))->set($response)->expiresAfter($this->readCacheTtl);
+        $item = $this->cache->getItem($key);
+
+        $item->set($response)->expiresAfter($this->readCacheTtl);
 
         $this->logger->debug('Saving read response in cache.', ['path' => $path, 'item' => $item]);
 
@@ -60,7 +68,7 @@ class CachedClient extends Client
     /**
      * @return bool
      */
-    public function isReadCacheEnabled()
+    public function isReadCacheEnabled(): bool
     {
         return $this->readCacheEnabled;
     }
@@ -88,7 +96,7 @@ class CachedClient extends Client
     /**
      * @return int
      */
-    public function getReadCacheTtl()
+    public function getReadCacheTtl(): int
     {
         return $this->readCacheTtl;
     }
@@ -98,7 +106,7 @@ class CachedClient extends Client
      *
      * @return $this
      */
-    public function setReadCacheTtl($readCacheTtl)
+    public function setReadCacheTtl(int $readCacheTtl)
     {
         $this->readCacheTtl = $readCacheTtl;
 
