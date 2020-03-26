@@ -23,15 +23,22 @@ class UserPassAuthenticationStrategy extends AbstractAuthenticationStrategy
     protected $password;
 
     /**
+     * @var string
+     */
+    protected $authMethod;
+
+    /**
      * UserPassAuthenticationStrategy constructor.
      *
      * @param string $username
      * @param string $password
+     * @param string $authMethod
      */
-    public function __construct($username, $password)
+    public function __construct($username, $password, $authMethod = 'userpass')
     {
         $this->username = $username;
         $this->password = $password;
+        $this->authMethod = $authMethod;
     }
 
     /**
@@ -43,7 +50,7 @@ class UserPassAuthenticationStrategy extends AbstractAuthenticationStrategy
     public function authenticate(): Auth
     {
         $response = $this->client->write(
-            sprintf('/auth/userpass/login/%s', $this->username),
+            sprintf('/auth/%s/login/%s', $this->authMethod, $this->username),
             ['password' => $this->password]
         );
 
