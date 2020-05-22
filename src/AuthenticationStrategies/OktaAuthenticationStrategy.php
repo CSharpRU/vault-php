@@ -19,7 +19,7 @@ class OktaAuthenticationStrategy
     public function authenticate(): Auth
     {
         $response = $this->client->write(
-            sprintf('/auth/radius/login/%s', $this->username),
+            sprintf('/auth/okta/login/%s', $this->username),
             ['password' => $this->password]
         );
 
