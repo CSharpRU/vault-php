@@ -10,8 +10,7 @@ use Vault\ResponseModels\Auth;
  *
  * @package Vault\AuthenticationStrategy
  */
-class OktaAuthenticationStrategy
-    extends UserPassAuthenticationStrategy
+class OktaAuthenticationStrategy extends UserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc

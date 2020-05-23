@@ -10,8 +10,7 @@ use Vault\ResponseModels\Auth;
  *
  * @package Vault\AuthenticationStrategy
  */
-class RadiusAuthenticationStrategy
-    extends UserPassAuthenticationStrategy
+class RadiusAuthenticationStrategy extends UserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc

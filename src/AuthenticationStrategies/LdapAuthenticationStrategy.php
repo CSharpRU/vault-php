@@ -10,8 +10,7 @@ use Vault\ResponseModels\Auth;
  *
  * @package Vault\AuthenticationStrategy
  */
-class LdapAuthenticationStrategy
-    extends UserPassAuthenticationStrategy
+class LdapAuthenticationStrategy extends UserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc
