@@ -3,50 +3,21 @@
 namespace Vault\AuthenticationStrategies;
 
 use Psr\Http\Client\ClientExceptionInterface;
-use Vault\ResponseModels\Auth;
 
 /**
  * Class UserPassAuthenticationStrategy
  *
  * @package Vault\AuthenticationStrategy
  */
-class UserPassAuthenticationStrategy extends AbstractAuthenticationStrategy
+class UserPassAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
 {
     /**
-     * @var string
+     * @inheritDoc
      */
-    protected $username;
-
-    /**
-     * @var string
-     */
-    protected $password;
-
-    /**
-     * UserPassAuthenticationStrategy constructor.
-     *
-     * @param string $username
-     * @param string $password
-     */
-    public function __construct($username, $password)
+    public function __construct($username, $password, $methodPathSegment = 'userpass')
     {
-        $this->username = $username;
-        $this->password = $password;
-    }
+        parent::__construct($username, $password);
 
-    /**
-     * Returns auth for further interactions with Vault.
-     *
-     * @return Auth
-     * @throws ClientExceptionInterface
-     */
-    public function authenticate(): Auth
-    {
-        $response = $this->client->write(
-            sprintf('/auth/userpass/login/%s', $this->username),
-            ['password' => $this->password]
-        );
-
-        return $response->getAuth();
+        $this->setMethodPathSegment($methodPathSegment);
     }
 }

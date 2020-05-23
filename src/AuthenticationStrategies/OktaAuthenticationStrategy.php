@@ -3,25 +3,21 @@
 namespace Vault\AuthenticationStrategies;
 
 use Psr\Http\Client\ClientExceptionInterface;
-use Vault\ResponseModels\Auth;
 
 /**
  * Class OktaAuthenticationStrategy
  *
  * @package Vault\AuthenticationStrategy
  */
-class OktaAuthenticationStrategy extends UserPassAuthenticationStrategy
+class OktaAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc
      */
-    public function authenticate(): Auth
+    public function __construct($username, $password, $methodPathSegment = 'okta')
     {
-        $response = $this->client->write(
-            sprintf('/auth/okta/login/%s', $this->username),
-            ['password' => $this->password]
-        );
+        parent::__construct($username, $password);
 
-        return $response->getAuth();
+        $this->setMethodPathSegment($methodPathSegment);
     }
 }

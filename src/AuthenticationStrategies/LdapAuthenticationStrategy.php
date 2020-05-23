@@ -3,25 +3,21 @@
 namespace Vault\AuthenticationStrategies;
 
 use Psr\Http\Client\ClientExceptionInterface;
-use Vault\ResponseModels\Auth;
 
 /**
  * Class LdapAuthenticationStrategy
  *
  * @package Vault\AuthenticationStrategy
  */
-class LdapAuthenticationStrategy extends UserPassAuthenticationStrategy
+class LdapAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc
      */
-    public function authenticate(): Auth
+    public function __construct($username, $password, $methodPathSegment = 'ldap')
     {
-        $response = $this->client->write(
-            sprintf('/auth/ldap/login/%s', $this->username),
-            ['password' => $this->password]
-        );
+        parent::__construct($username, $password);
 
-        return $response->getAuth();
+        $this->setMethodPathSegment($methodPathSegment);
     }
 }

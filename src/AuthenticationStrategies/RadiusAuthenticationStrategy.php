@@ -3,25 +3,21 @@
 namespace Vault\AuthenticationStrategies;
 
 use Psr\Http\Client\ClientExceptionInterface;
-use Vault\ResponseModels\Auth;
 
 /**
  * Class RadiusAuthenticationStrategy
  *
  * @package Vault\AuthenticationStrategy
  */
-class RadiusAuthenticationStrategy extends UserPassAuthenticationStrategy
+class RadiusAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc
      */
-    public function authenticate(): Auth
+    public function __construct($username, $password, $methodPathSegment = 'radius')
     {
-        $response = $this->client->write(
-            sprintf('/auth/radius/login/%s', $this->username),
-            ['password' => $this->password]
-        );
+        parent::__construct($username, $password);
 
-        return $response->getAuth();
+        $this->setMethodPathSegment($methodPathSegment);
     }
 }
