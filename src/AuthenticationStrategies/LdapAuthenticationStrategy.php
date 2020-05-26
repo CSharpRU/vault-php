@@ -2,22 +2,15 @@
 
 namespace Vault\AuthenticationStrategies;
 
-use Psr\Http\Client\ClientExceptionInterface;
-
 /**
  * Class LdapAuthenticationStrategy
  *
  * @package Vault\AuthenticationStrategy
  */
-class LdapAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
+class LdapAuthenticationStrategy extends AbstractPathAuthenticationStrategy
 {
     /**
-     * @inheritDoc
+     * @var string
      */
-    public function __construct($username, $password, $methodPathSegment = 'ldap')
-    {
-        parent::__construct($username, $password);
-
-        $this->setMethodPathSegment($methodPathSegment);
-    }
+    protected $methodPathSegment = 'ldap';
 }
