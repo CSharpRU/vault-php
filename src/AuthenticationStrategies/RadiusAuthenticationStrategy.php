@@ -5,16 +5,16 @@ namespace Vault\AuthenticationStrategies;
 use Psr\Http\Client\ClientExceptionInterface;
 
 /**
- * Class UserPassAuthenticationStrategy
+ * Class RadiusAuthenticationStrategy
  *
  * @package Vault\AuthenticationStrategy
  */
-class UserPassAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
+class RadiusAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc
      */
-    public function __construct($username, $password, $methodPathSegment = 'userpass')
+    public function __construct($username, $password, $methodPathSegment = 'radius')
     {
         parent::__construct($username, $password);
 

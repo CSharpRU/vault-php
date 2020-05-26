@@ -5,16 +5,16 @@ namespace Vault\AuthenticationStrategies;
 use Psr\Http\Client\ClientExceptionInterface;
 
 /**
- * Class UserPassAuthenticationStrategy
+ * Class OktaAuthenticationStrategy
  *
  * @package Vault\AuthenticationStrategy
  */
-class UserPassAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
+class OktaAuthenticationStrategy extends AbstractUserPassAuthenticationStrategy
 {
     /**
      * @inheritDoc
      */
-    public function __construct($username, $password, $methodPathSegment = 'userpass')
+    public function __construct($username, $password, $methodPathSegment = 'okta')
     {
         parent::__construct($username, $password);
 
