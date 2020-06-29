@@ -2,8 +2,6 @@
 
 namespace Vault\Helpers;
 
-use Doctrine\Common\Inflector\Inflector;
-
 /**
  * Class Model
  *
@@ -26,9 +24,16 @@ class ModelHelper
                 $value = self::camelize($value, $recursive);
             }
 
-            $return[Inflector::camelize($key)] = $value;
+            $return[self::camelizeString($key)] = $value;
         }
 
         return $return;
+    }
+
+    private static function camelizeString(string $data): string
+    {
+        $camelizedString = str_replace([' ', '_', '-'], '', ucwords($data, ' _-'));
+
+        return lcfirst($camelizedString);
     }
 }
