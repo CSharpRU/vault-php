@@ -120,6 +120,11 @@ abstract class BaseClient implements LoggerAwareInterface
             $headers['X-Vault-Token'] = $this->token->getAuth()->getClientToken();
         }
 
+        if (strpos($path, '?') !== false) {
+            [$path, $query] = explode('?', $path, 2);
+            $this->baseUri = $this->baseUri->withQuery($query);
+        }
+
         $request = $this->requestFactory->createRequest(strtoupper($method), $this->baseUri->withPath($path));
 
         foreach ($headers as $name => $value) {
