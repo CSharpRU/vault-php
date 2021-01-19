@@ -17,12 +17,6 @@
     "autoload": {
         "psr-4": {"Vault\\": "src/"}
     },
-    "repositories": [
-        {
-            "type": "git",
-            "url": "https://github.com/morozov/php-vcr"
-        }
-    ],
     "require": {
         "php": "^7.2",
         "ext-json": "*",
