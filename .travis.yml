@@ -11,6 +11,6 @@ before_install:
 install:
   - composer install -n
 script:
-  - php vendor/bin/codecept run --coverage-xml
+  - XDEBUG_MODE=coverage php vendor/bin/codecept run --coverage-xml
 after_success:
   - java -jar codacy-coverage-reporter-assembly.jar report -l PHP -r tests/_output/coverage.xml
