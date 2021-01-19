@@ -28,6 +28,7 @@
     },
     "require-dev": {
         "codeception/codeception": "^2.2 || ^4.0",
+        "codeception/module-asserts": "*@dev",
         "php-vcr/php-vcr": "^1.5",
         "alextartan/guzzle-psr18-adapter": "^1.2 || ^2.0",
         "laminas/laminas-diactoros": "^2.3",
