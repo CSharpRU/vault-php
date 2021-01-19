@@ -6,12 +6,9 @@ php:
   - '8.0'
 #  - nightly
 sudo: required
-before_install:
-  - sudo apt-get install jq
-  - curl -LSs "$(curl -LSs https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | endswith(".jar"))) | .[0].browser_download_url')" -o codacy-coverage-reporter-assembly.jar
 install:
   - composer install -n
 script:
   - XDEBUG_MODE=coverage php vendor/bin/codecept run --coverage-xml
 after_success:
-  - java -jar codacy-coverage-reporter-assembly.jar report -l PHP -r tests/_output/coverage.xml
+  - bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l PHP -r tests/_output/coverage.xml
