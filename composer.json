@@ -35,7 +35,7 @@
     "require-dev": {
         "codeception/codeception": "^2.2",
         "php-vcr/php-vcr": "^1.4",
-        "alextartan/guzzle-psr18-adapter": "^1.2",
+        "alextartan/guzzle-psr18-adapter": "^1.2 || ^2.0",
         "laminas/laminas-diactoros": "^2.3",
         "cache/array-adapter": "^1.0"
     },
