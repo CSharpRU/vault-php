@@ -17,7 +17,7 @@ interface AuthenticationStrategy
      *
      * @return Auth
      */
-    public function authenticate(): Auth;
+    public function authenticate(): ?Auth;
 
     /**
      * @return Client
