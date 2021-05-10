@@ -47,7 +47,7 @@ class AppRoleAuthenticationStrategy extends AbstractAuthenticationStrategy
      * @return Auth
      * @throws ClientExceptionInterface
      */
-    public function authenticate(): Auth
+    public function authenticate(): ?Auth
     {
         $response = $this->client->write(
             '/auth/' . $this->name . '/login',
