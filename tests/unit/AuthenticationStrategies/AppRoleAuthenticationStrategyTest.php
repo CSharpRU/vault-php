@@ -44,16 +44,16 @@ class AppRoleAuthenticationStrategyTest extends Unit
         $this->assertNotEmpty($client->getToken()->getAuth()->isRenewable());
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         VCR::turnOn();
 
         VCR::insertCassette('authentication-strategies/app-role');
 
-        return parent::setUp();
+        parent::setUp();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         // To stop recording requests, eject the cassette
         VCR::eject();

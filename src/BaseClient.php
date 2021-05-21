@@ -142,6 +142,15 @@ abstract class BaseClient implements LoggerAwareInterface
 
         try {
             $response = $this->client->sendRequest($request);
+
+            if ($response->getStatusCode() > 399) {
+                throw new RequestException(
+                    'Bad status received from Vault',
+                    $response->getStatusCode(),
+                    null,
+                    $request
+                );
+            }
         } catch (ClientExceptionInterface $e) {
             $this->logger->error('Something went wrong when calling Vault.', [
                 'code' => $e->getCode(),
