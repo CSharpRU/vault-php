@@ -64,9 +64,9 @@ Fetching a secret
 
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use Zend\Diactoros\RequestFactory;
-    use Zend\Diactoros\StreamFactory;
-    use Zend\Diactoros\Uri;
+    use Laminas\Diactoros\RequestFactory;
+    use Laminas\Diactoros\StreamFactory;
+    use Laminas\Diactoros\Uri;
 
     // Creating the client
     $client = new Client(
