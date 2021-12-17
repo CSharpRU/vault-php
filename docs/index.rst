@@ -55,6 +55,59 @@ Quick start
         ->setAuthenticationStrategy(new TokenAuthenticationStrategy('463763ae-0c3b-ff77-e137-af668941465c'))
         ->authenticate();
 
+List secret keys
+----------------
+
+To retrieve a set of keys in a secret, after authentication, use the ``keys()`` method, passing in the database’s path, with the suffix ``/metadata``, as you can see in the highlighted section below.
+
+.. code-block:: php
+   :linenos:
+   :emphasize-lines: 29,30,31
+
+    <?php
+
+    use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
+    use Vault\Client;
+    use Zend\Diactoros\RequestFactory;
+    use Zend\Diactoros\StreamFactory;
+    use Zend\Diactoros\Uri;
+
+    // Creating the client
+    $client = new Client(
+        new Uri('http://127.0.0.1:8200'),
+        new \AlexTartan\GuzzlePsr18Adapter\Client(),
+        new RequestFactory(),
+        new StreamFactory()
+    ); // Using alextartan/guzzle-psr18-adapter and zendframework/zend-diactoros
+
+    // Authenticating using token auth backend.
+    // Request exception could appear here.
+    $authenticated = $client
+        ->setAuthenticationStrategy(new TokenAuthenticationStrategy('463763ae-0c3b-ff77-e137-af668941465c'))
+        ->authenticate();
+
+    if (!$authenticated) {
+        // Throw an exception or handle authentication failure.
+    }
+
+    // Request exception could appear here.
+    /** @var \Vault\ResponseModels\Response $response */
+    $response = $client->keys('/secret/metadata');
+
+    $data = $response->getData(); // Raw array with a list of secret keys.
+
+    // ...
+
+On success, an associative array is returned, similar in structure to the example below.
+This array contains an element named ``keys``, whose value is an array of the secret's keys.
+
+.. code-block:: php
+
+    [
+        "keys": [
+            "hello"
+        ]
+    ]
 Fetching a secret
 -----------------
 
