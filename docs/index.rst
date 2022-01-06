@@ -19,13 +19,13 @@ Quick start
 
     <?php
 
+    use Laminas\Diactoros\RequestFactory;
+    use Laminas\Diactoros\StreamFactory;
+    use Laminas\Diactoros\Uri;
     use Vault\AuthenticationStrategies\AppRoleAuthenticationStrategy;
     use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use Zend\Diactoros\RequestFactory;
-    use Zend\Diactoros\StreamFactory;
-    use Zend\Diactoros\Uri;
 
     // Creating the client
     $client = new Client(
@@ -62,11 +62,11 @@ Fetching a secret
 
     <?php
 
+    use Laminas\Diactoros\RequestFactory;
+    use Laminas\Diactoros\StreamFactory;
+    use Laminas\Diactoros\Uri;
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use Zend\Diactoros\RequestFactory;
-    use Zend\Diactoros\StreamFactory;
-    use Zend\Diactoros\Uri;
 
     // Creating the client
     $client = new Client(

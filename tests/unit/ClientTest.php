@@ -3,6 +3,9 @@
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use Codeception\Test\Unit;
 use Codeception\Util\Stub;
+use Laminas\Diactoros\RequestFactory;
+use Laminas\Diactoros\StreamFactory;
+use Laminas\Diactoros\Uri;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -15,9 +18,6 @@ use Vault\Exceptions\RuntimeException;
 use Vault\Models\Token;
 use Vault\ResponseModels\Auth;
 use VCR\VCR;
-use Zend\Diactoros\RequestFactory;
-use Zend\Diactoros\StreamFactory;
-use Zend\Diactoros\Uri;
 
 class ClientTest extends Unit
 {
