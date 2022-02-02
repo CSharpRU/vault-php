@@ -23,9 +23,9 @@ Quick start
     use Vault\AuthenticationStrategies\UserPassAuthenticationStrategy;
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use Zend\Diactoros\RequestFactory;
-    use Zend\Diactoros\StreamFactory;
-    use Zend\Diactoros\Uri;
+    use Laminas\Diactoros\RequestFactory;
+    use Laminas\Diactoros\StreamFactory;
+    use Laminas\Diactoros\Uri;
 
     // Creating the client
     $client = new Client(
@@ -33,7 +33,7 @@ Quick start
         new \AlexTartan\GuzzlePsr18Adapter\Client(),
         new RequestFactory(),
         new StreamFactory()
-    ); // Using alextartan/guzzle-psr18-adapter and zendframework/zend-diactoros
+    ); // Using alextartan/guzzle-psr18-adapter and laminas/laminas-diactoros
 
     // Authenticating using userpass auth backend.
 
@@ -64,9 +64,9 @@ Fetching a secret
 
     use Vault\AuthenticationStrategies\TokenAuthenticationStrategy;
     use Vault\Client;
-    use Zend\Diactoros\RequestFactory;
-    use Zend\Diactoros\StreamFactory;
-    use Zend\Diactoros\Uri;
+    use Laminas\Diactoros\RequestFactory;
+    use Laminas\Diactoros\StreamFactory;
+    use Laminas\Diactoros\Uri;
 
     // Creating the client
     $client = new Client(
@@ -74,7 +74,7 @@ Fetching a secret
         new \AlexTartan\GuzzlePsr18Adapter\Client(),
         new RequestFactory(),
         new StreamFactory()
-    ); // Using alextartan/guzzle-psr18-adapter and zendframework/zend-diactoros
+    ); // Using alextartan/guzzle-psr18-adapter and laminas/laminas-diactoros
 
     // Authenticating using token auth backend.
     // Request exception could appear here.
