@@ -35,6 +35,10 @@ Quick start
         new StreamFactory()
     ); // Using alextartan/guzzle-psr18-adapter and laminas/laminas-diactoros
 
+    // Define Vault Namespace (optional)
+
+    $client->setNamespace('my-namespace');
+
     // Authenticating using userpass auth backend.
 
     $authenticated = $client
