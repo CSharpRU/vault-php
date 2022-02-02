@@ -40,6 +40,11 @@ abstract class BaseClient implements LoggerAwareInterface
     protected $token;
 
     /**
+     * @var Namespace
+     */
+    protected $namespace;
+
+    /**
      * @var UriInterface
      */
     protected $baseUri;
@@ -118,6 +123,10 @@ abstract class BaseClient implements LoggerAwareInterface
 
         if ($this->token) {
             $headers['X-Vault-Token'] = $this->token->getAuth()->getClientToken();
+        }
+
+        if ($this->namespace) {
+            $headers['X-Vault-Namespace'] = $this->getNamespace();
         }
 
         if (strpos($path, '?') !== false) {
@@ -295,6 +304,26 @@ abstract class BaseClient implements LoggerAwareInterface
     public function setToken(Token $token)
     {
         $this->token = $token;
+
+        return $this;
+    }
+
+    /**
+     * @return Namespace
+     */
+    public function getNamespace(): string
+    {
+        return $this->namespace;
+    }
+
+    /**
+     * @param String $namespace
+     *
+     * @return $this
+     */
+    public function setNamespace(string $namespace)
+    {
+        $this->namespace = $namespace;
 
         return $this;
     }
