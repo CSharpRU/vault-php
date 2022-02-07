@@ -409,20 +409,6 @@ abstract class BaseClient implements LoggerAwareInterface
     }
 
     /**
-     * Sets a logger.
-     *
-     * @param LoggerInterface $logger
-     *
-     * @return $this
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-
-        return $this;
-    }
-
-    /**
      * @return ResponseBuilder
      */
     public function getResponseBuilder(): ResponseBuilder
