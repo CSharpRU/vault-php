@@ -10,7 +10,7 @@ namespace Vault\ResponseModels\Traits;
 trait LeaseTrait
 {
     /**
-     * @var int|null
+     * @var string|null
      */
     protected $leaseId;
 
@@ -25,9 +25,9 @@ trait LeaseTrait
     protected $renewable;
 
     /**
-     * @return int|null
+     * @return string|null
      */
-    public function getLeaseId(): ?int
+    public function getLeaseId(): ?string
     {
         return $this->leaseId;
     }
