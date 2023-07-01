@@ -2,6 +2,8 @@
 
 namespace Vault\SecretsEngines;
 
+use Vault\Builders\KeyValueVersion1\ListResponseBuilder;
+use Vault\ResponseModels\KeyValueVersion1\ListResponse;
 use Vault\ResponseModels\Response;
 
 /**
@@ -13,6 +15,12 @@ use Vault\ResponseModels\Response;
  */
 class KeyValueVersion1SecretsEngine extends AbstractSecretsEngine
 {
+    /**
+     * Read specified secret
+     * 
+     * @param string $path Path of the secret
+     * @return Response
+     **/
     public function read(string $path): Response
     {
         return $this->client->get(
@@ -20,13 +28,28 @@ class KeyValueVersion1SecretsEngine extends AbstractSecretsEngine
         );
     }
 
-    public function list(string $path): Response
+    /**
+     * List secrets at specified path
+     * 
+     * @param string $path Path to list secrets from
+     * @return ListResponse
+     **/
+    public function list(string $path): ListResponse
     {
-        return $this->client->list(
-            parent::buildPath($path)
+        return ListResponseBuilder::build(
+            $this->client->list(
+                parent::buildPath($path)
+            )
         );
     }
 
+    /**
+     * Create or update specified secret
+     * 
+     * @param string $path Path of the secret
+     * @param array $data Payload to write
+     * @return Response
+     **/
     public function createOrUpdate(string $path, array $data = []): Response
     {
         return $this->client->post(
@@ -35,6 +58,12 @@ class KeyValueVersion1SecretsEngine extends AbstractSecretsEngine
         );
     }
 
+    /**
+     * Delete secret
+     * 
+     * @param string $path Path of the secret
+     * @return Response
+     **/
     public function delete(string $path): Response
     {
         return $this->client->delete(
