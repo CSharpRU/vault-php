@@ -22,6 +22,10 @@ abstract class AbstractSecretsEngine
      */
     protected $mount;
 
+    /**
+     * @param Client $client Authenticated Vault client
+     * @param string $mount Path to the secret engine (aka mount location)
+     */
     public function __construct(Client $client, string $mount)
     {
         $this->client = $client;
@@ -34,6 +38,11 @@ abstract class AbstractSecretsEngine
         $this->mount = $mount;
     }
 
+    /**
+     * @param string $path Path of the secret
+     *
+     * @return string
+     */
     public function buildPath(string $path): string
     {
         return sprintf('%s/%s', $this->client->buildPath($this->mount), $path);

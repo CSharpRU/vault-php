@@ -13,6 +13,9 @@ use Vault\Client;
  */
 class CubbyholeSecretsEngine extends KeyValueVersion1SecretsEngine
 {
+    /**
+     * @param Client $client Authenticated Vault client
+     */
     public function __construct(Client $client)
     {
         parent::__construct(

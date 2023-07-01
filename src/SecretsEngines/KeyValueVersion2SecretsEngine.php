@@ -28,7 +28,7 @@ use Vault\ResponseModels\Response;
 class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
 {
     /**
-     * Configures secrets engine
+     * Configure secrets engine
      * 
      * @param Configuration $config Configuration to set
      * @return Response
@@ -42,7 +42,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Reads current secrets engine configuration
+     * Read current secrets engine configuration
      * 
      * @return Configuration
      **/
@@ -74,7 +74,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Creates new version of a secret
+     * Create new version of a secret
      * 
      * @param string $path Path of the secret
      * @param array $data Payload to write
@@ -98,7 +98,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Patches existing secret
+     * Patch existing secret
      * 
      * @param string $path Path of the secret
      * @param array $data Payload to write
@@ -122,7 +122,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Reads subkeys within a secret
+     * Read subkeys within a secret
      * 
      * @param string $path Path of the secret
      * @param int $version Version to read (0 = latest)
@@ -141,7 +141,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Deletes latest version of the secret
+     * Delete latest version of the secret
      * 
      * @param string $path Path of the secret
      * @return Response
@@ -154,7 +154,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Deletes specified secret versions
+     * Delete specified secret versions
      * 
      * @param string $path Path of the secret
      * @param int[] $versions Versions to delete
@@ -172,7 +172,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Undeletes specified secret versions
+     * Undelete specified secret versions
      * 
      * @param string $path Path of the secret
      * @param int[] $versions Versions to delete
@@ -190,7 +190,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Destroys (hard delete) specified secret versions
+     * Destroy (hard delete) specified secret versions
      * 
      * @param string $path Path of the secret
      * @param int[] $versions Versions to delete
@@ -223,7 +223,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Reads specified secret metadata
+     * Read specified secret metadata
      * 
      * @param string $path Path of the secret
      * @return ReadMetadataResponse
@@ -238,7 +238,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Creates or updates specified secret metadata
+     * Create or update specified secret metadata
      * 
      * @param string $path Path of the secret
      * @param SecretMetadata $metadata Metadata to set
@@ -253,7 +253,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Patches specified secret metadata
+     * Patch specified secret metadata
      * 
      * @param string $path Path of the secret
      * @param array $metadata Metadata to set
@@ -268,7 +268,7 @@ class KeyValueVersion2SecretsEngine extends AbstractSecretsEngine
     }
 
     /**
-     * Deletes metadata and all versions
+     * Delete metadata and all versions
      * 
      * @param string $path Path of the secret
      * @return Response
