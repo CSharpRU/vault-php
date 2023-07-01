@@ -2,15 +2,16 @@
 
 namespace Vault;
 
-use RuntimeException;
+use Vault\Exceptions\RuntimeException;
 use Vault\Helpers\ArrayHelper;
+use Vault\Helpers\ModelHelper;
 
 /**
- * Class Object
+ * Class BaseObject
  *
  * @package Vault
  */
-class BaseObject
+class BaseObject implements \JsonSerializable
 {
     /**
      * Object constructor.
@@ -192,5 +193,15 @@ class BaseObject
         }
 
         return $result;
+    }
+
+    /**
+     * @return array
+     * 
+     * @throws RuntimeException
+     */
+    public function jsonSerialize(): array
+    {
+        return ModelHelper::snakelize($this->toArray(), false);
     }
 }
