@@ -37,36 +37,36 @@ class ReadMetadataResponse extends SecretMetadata
     protected $versions = [];
 
     /**
-	 * @return string
-	 */
-	public function getCreatedTime(): string
+     * @return string
+     */
+    public function getCreatedTime(): string
     {
-		return $this->createdTime;
-	}
+        return $this->createdTime;
+    }
 
     /**
-	 * @return int
-	 */
-	public function getCurrentVersion(): int
+     * @return int
+     */
+    public function getCurrentVersion(): int
     {
-		return $this->currentVersion;
-	}
+        return $this->currentVersion;
+    }
 
     /**
-	 * @return int
-	 */
-	public function getOldestVersion(): int
+     * @return int
+     */
+    public function getOldestVersion(): int
     {
-		return $this->oldestVersion;
-	}
+        return $this->oldestVersion;
+    }
 
     /**
-	 * @return string|null
-	 */
-	public function getUpdatedTime(): ?string
+     * @return string|null
+     */
+    public function getUpdatedTime(): ?string
     {
-		return $this->updatedTime;
-	}
+        return $this->updatedTime;
+    }
 
     /**
      * @return VersionMetadata[]
