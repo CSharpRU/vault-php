@@ -1,0 +1,46 @@
+
+-
+    request:
+        method: POST
+        url: 'http://127.0.0.1:8200/v1/auth/aws/login'
+        headers:
+            Host: '127.0.0.1:8200'
+            Expect: null
+            Accept-Encoding: null
+            User-Agent: VaultPHP/1.0.0
+            Content-Type: application/json
+            Accept: null
+        body: '{"role":"dev-role","iam_http_request_method":"POST","iam_request_url":"aHR0cHM6Ly9zdHMuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb20=","iam_request_body":"QWN0aW9uPUdldENhbGxlcklkZW50aXR5JlZlcnNpb249MjAxMS0wNi0xNQ==","iam_request_headers":"eyJIb3N0IjpbInN0cy5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbSJdLCJDb250ZW50LUxlbmd0aCI6WyI0MyJdLCJDb250ZW50LVR5cGUiOlsiYXBwbGljYXRpb25cL3gtd3d3LWZvcm0tdXJsZW5jb2RlZCJdLCJYLUFtei1Vc2VyLUFnZW50IjpbImF3cy1zZGstcGhwXC8zLjI2MC4zIE9TXC9EYXJ3aW5cLzIyLjEuMCBsYW5nXC9waHBcLzguMC4yNyJdLCJVc2VyLUFnZW50IjpbImF3cy1zZGstcGhwXC8zLjI2MC4zIE9TXC9EYXJ3aW5cLzIyLjEuMCBsYW5nXC9waHBcLzguMC4yNyJdLCJYLVZhdWx0LUFXUy1JQU0tU2VydmVyLUlEIjpbImxvY2FsaG9zdCJdLCJhd3Mtc2RrLXJldHJ5IjpbIjBcLzAiXX0="}'
+    response:
+        status:
+            http_version: '1.1'
+            code: '200'
+            message: OK
+        headers:
+            Cache-Control: no-store
+            Content-Type: application/json
+            Date: 'Tue, 01 Aug 2017 06:54:33 GMT'
+            Content-Length: '366'
+        body: "{\"request_id\":\"08962062-3aab-fd89-3413-99c3521ecc75\",\"lease_id\":\"\",\"renewable\":false,\"lease_duration\":0,\"data\":null,\"wrap_info\":null,\"warnings\":null,\"auth\":{\"client_token\":\"9e64c3b8-01f7-7a64-1575-30a91f7d1ae4\",\"accessor\":\"033ccada-d332-9415-0acc-0ec51e81dbd1\",\"policies\":[\"default\",\"test\"],\"metadata\":{\"username\":\"test\"},\"lease_duration\":2764800,\"renewable\":true}}\n"
+-
+    request:
+        method: GET
+        url: 'http://127.0.0.1:8200/v1/auth/token/lookup-self'
+        headers:
+            Host: '127.0.0.1:8200'
+            Accept-Encoding: null
+            User-Agent: VaultPHP/1.0.0
+            Content-Type: application/json
+            X-Vault-Token: 9e64c3b8-01f7-7a64-1575-30a91f7d1ae4
+            Accept: null
+    response:
+        status:
+            http_version: '1.1'
+            code: '200'
+            message: OK
+        headers:
+            Cache-Control: no-store
+            Content-Type: application/json
+            Date: 'Tue, 01 Aug 2017 06:54:33 GMT'
+            Content-Length: '504'
+        body: "{\"request_id\":\"ab3f3dc9-3633-0c18-44e2-f3f58cb56d0a\",\"lease_id\":\"\",\"renewable\":false,\"lease_duration\":0,\"data\":{\"accessor\":\"033ccada-d332-9415-0acc-0ec51e81dbd1\",\"creation_time\":1501570473,\"creation_ttl\":2764800,\"display_name\":\"userpass-test\",\"explicit_max_ttl\":0,\"id\":\"9e64c3b8-01f7-7a64-1575-30a91f7d1ae4\",\"meta\":{\"username\":\"test\"},\"num_uses\":0,\"orphan\":true,\"path\":\"auth/userpass/login/test\",\"policies\":[\"default\",\"test\"],\"renewable\":true,\"ttl\":2764800},\"wrap_info\":null,\"warnings\":null,\"auth\":null}\n"
