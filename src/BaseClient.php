@@ -188,18 +188,6 @@ abstract class BaseClient implements LoggerAwareInterface
      * @throws InvalidArgumentException
      * @throws ClientExceptionInterface
      */
-    public function list(string $path = ''): Response
-    {
-        return $this->responseBuilder->build($this->send('LIST', $path));
-    }
-
-    /**
-     * @param string $path
-     *
-     * @return Response
-     * @throws InvalidArgumentException
-     * @throws ClientExceptionInterface
-     */
     public function get(string $path = ''): Response
     {
         return $this->responseBuilder->build($this->send('GET', $path));
