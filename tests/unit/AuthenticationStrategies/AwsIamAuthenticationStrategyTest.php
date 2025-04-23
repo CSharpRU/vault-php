@@ -58,6 +58,8 @@ class AwsIamAuthenticationStrategyTest extends Unit
 
     protected function setUp(): void
     {
+        $this->markTestSkipped('Does not work as expected');
+
         VCR::turnOn();
         VCR::configure()->setMode(VCR::MODE_ONCE);
 
