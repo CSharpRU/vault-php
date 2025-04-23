@@ -25,9 +25,9 @@ use Vault\ResponseModels\Response;
  */
 abstract class BaseClient implements LoggerAwareInterface
 {
-    public const VERSION_1 = 'v1';
-
     use LoggerAwareTrait;
+
+    public const VERSION_1 = 'v1';
 
     /**
      * @var string
@@ -83,7 +83,7 @@ abstract class BaseClient implements LoggerAwareInterface
         ClientInterface $client,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
-        LoggerInterface $logger = null
+        ?LoggerInterface $logger = null
     ) {
         $this->baseUri = $baseUri;
         $this->client = $client;
