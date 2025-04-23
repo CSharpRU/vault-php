@@ -25,9 +25,9 @@ use Vault\ResponseModels\Response;
  */
 abstract class BaseClient implements LoggerAwareInterface
 {
-    public const VERSION_1 = 'v1';
-
     use LoggerAwareTrait;
+
+    public const VERSION_1 = 'v1';
 
     /**
      * @var string
