@@ -61,7 +61,7 @@ class ClientTest extends Unit
      *
      * @return Client
      */
-    private function getClient(ClientInterface $client = null): Client
+    private function getClient(?ClientInterface $client = null): Client
     {
         return new Client(
             new Uri('http://127.0.0.1:8200'),
