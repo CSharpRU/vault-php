@@ -75,7 +75,7 @@ class Client extends BaseClient
      */
     public function keys(string $path): Response
     {
-        return $this->list($this->buildPath($path));
+        return $this->get($this->buildPath($path));
     }
 
     /**
