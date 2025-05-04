@@ -26,6 +26,8 @@ use Vault\ResponseModels\Response;
 abstract class BaseClient implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
+    
+    public const VERSION_1 = 'v1';
 
     public const VERSION_1 = 'v1';
 
@@ -40,7 +42,7 @@ abstract class BaseClient implements LoggerAwareInterface
     protected $token;
 
     /**
-     * @var Namespace
+     * @var string
      */
     protected $namespace;
 
@@ -116,9 +118,10 @@ abstract class BaseClient implements LoggerAwareInterface
      */
     public function send(string $method, string $path, string $body = ''): ResponseInterface
     {
+        $method = strtoupper($method);
         $headers = [
             'User-Agent' => 'VaultPHP/1.0.0',
-            'Content-Type' => 'application/json',
+            'Content-Type' => ($method === 'PATCH' ? 'application/merge-patch+json' : 'application/json'),
         ];
 
         if ($this->token) {
@@ -134,7 +137,7 @@ abstract class BaseClient implements LoggerAwareInterface
             $this->baseUri = $this->baseUri->withQuery($query);
         }
 
-        $request = $this->requestFactory->createRequest(strtoupper($method), $this->baseUri->withPath($path));
+        $request = $this->requestFactory->createRequest($method, $this->baseUri->withPath($path));
 
         foreach ($headers as $name => $value) {
             $request = $request->withHeader($name, $value);
@@ -309,7 +312,7 @@ abstract class BaseClient implements LoggerAwareInterface
     }
 
     /**
-     * @return Namespace
+     * @return string
      */
     public function getNamespace(): string
     {
@@ -317,7 +320,7 @@ abstract class BaseClient implements LoggerAwareInterface
     }
 
     /**
-     * @param String $namespace
+     * @param string $namespace
      *
      * @return $this
      */
