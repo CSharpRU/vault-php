@@ -30,6 +30,9 @@ class AwsIamAuthenticationStrategy extends AbstractAuthenticationStrategy
     /** @var ?string */
     private $serverId;
 
+    /** @var StsClient|null */
+    private $stsClient;
+
     /**
      * @param string     $role The name of the vault role
      * @param string     $region The AWS region to use
