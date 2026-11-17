@@ -33,6 +33,18 @@ class Token extends BaseObject
     protected $creationTtl;
 
     /**
+     * Current expiry from lookup-self; creation TTL does not reflect renewals.
+     *
+     * @var string|null
+     */
+    protected $expireTime;
+
+    public function getExpireTime(): ?string
+    {
+        return $this->expireTime;
+    }
+
+    /**
      * @var string|null
      */
     protected $displayName;
