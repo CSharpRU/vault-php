@@ -1,6 +1,9 @@
 <?php
 
+namespace Vault\Tests\Unit;
+
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Vault\Client;
 use Vault\Models\Token;
 
