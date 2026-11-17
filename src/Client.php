@@ -191,6 +191,13 @@ class Client extends BaseClient
      */
     protected function isTokenExpired(Token $token): bool
     {
+        // lookup-self's expiry includes renewals. creation_time + creation_ttl
+        // is only the original expiry, so it rejects valid periodic tokens.
+        if ($token->getExpireTime() !== null) {
+            $expiresAt = strtotime($token->getExpireTime());
+            return $expiresAt === false || time() >= $expiresAt;
+        }
+
         return !$token ||
             (
                 $token->getCreationTtl() > 0 &&
